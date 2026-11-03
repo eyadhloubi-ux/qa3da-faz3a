@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: qa3da-faz3a
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /stats
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: ADMIN_KEY
+        generateValue: true

@@ -1,0 +1,9 @@
+{
+  "name": "qa3da-faz3a",
+  "version": "1.0.0",
+  "description": "قعدة فزعة — لعبة جماعية تعاونية: يا منطلع سوا، يا منوقع سوا",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" },
+  "dependencies": { "express": "^4.19.2", "qrcode": "^1.5.3", "ws": "^8.17.0" }
+}

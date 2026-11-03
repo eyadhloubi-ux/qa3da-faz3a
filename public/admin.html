@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>إدارة قعدة فزعة</title>
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@700;800&family=Cairo:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#16161d;--bg:#f7f4ec;--a:#2b59ff;--b:#ff6b2c;--c:#c6f432;--screen:#141a3a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:Cairo,sans-serif;padding:20px 16px 40px}
+.wrap{max-width:820px;margin:auto;display:flex;flex-direction:column;gap:14px}
+h1{font-family:Changa;font-size:28px}h1 b{background:var(--b);color:#fff;padding:0 8px;border:3px solid var(--ink);border-radius:8px}
+.card{border:3px solid var(--ink);border-radius:16px;background:#fff;padding:14px;box-shadow:4px 4px 0 var(--ink)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.k{border:3px solid var(--ink);border-radius:14px;background:var(--screen);color:#fff;padding:12px;box-shadow:4px 4px 0 var(--ink)}
+.k b{display:block;font-family:Changa;font-size:34px;color:var(--c)}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;border-bottom:2px dashed #ddd;text-align:right}
+.bar{height:12px;border:2px solid var(--ink);border-radius:99px;overflow:hidden;background:#eee;min-width:80px}.bar i{display:block;height:100%;background:var(--a)}
+input,button{font-family:inherit;font-size:16px;border:3px solid var(--ink);border-radius:12px;padding:10px}
+button{background:var(--a);color:#fff;font-weight:800;box-shadow:3px 3px 0 var(--ink);cursor:pointer}
+.sub{color:#6b6a75;font-size:13px}
+</style>
+</head>
+<body><div class="wrap">
+<h1>إدارة قعدة <b>فزعة</b></h1>
+<div class="card" id="login"><p style="margin-bottom:8px">مفتاح الإدارة (ADMIN_KEY من إعدادات Render)</p><div style="display:flex;gap:8px"><input id="key" type="password" style="flex:1"><button id="go">دخول</button></div></div>
+<div id="out" hidden>
+  <div class="kpis" id="kpis"></div>
+  <div class="card" style="margin-top:14px"><h3 style="font-family:Changa;margin-bottom:8px">المهمات — قديش انلعبت وقديش نجحوا فيها</h3><table id="games"></table></div>
+  <div class="card" style="margin-top:14px"><h3 style="font-family:Changa;margin-bottom:8px">القعدات الشغّالة هلق</h3><table id="live"></table></div>
+  <div class="card" style="margin-top:14px"><h3 style="font-family:Changa;margin-bottom:8px">آخر الأيام</h3><table id="days"></table></div>
+  <p class="sub" style="margin-top:10px">بتتحدّث كل 10 ثواني · الإحصائيات العامة كمان على <a href="/stats">/stats</a></p>
+</div>
+<p class="sub">إعداد م. إياد حلوبي · @eyad.hloubi</p>
+</div>
+<script>
+const $=s=>document.querySelector(s);let KEY=sessionStorage.getItem('fzk')||'';
+async function load(){
+  const r=await fetch('/admin/data?key='+encodeURIComponent(KEY)); if(!r.ok){$('#login').hidden=false;$('#out').hidden=true;if(KEY)alert('المفتاح غلط');return}
+  const d=await r.json(); sessionStorage.setItem('fzk',KEY); $('#login').hidden=true; $('#out').hidden=false;
+  const played=Object.values(d.games).reduce((a,g)=>a+g.played,0), won=Object.values(d.games).reduce((a,g)=>a+g.won,0);
+  $('#kpis').innerHTML=[['قعدات انفتحت',d.sessions],['لاعبين فاتوا',d.joins],['قعدات خلصت',d.finals],['قعدات 12/12',d.perfect],['مهمات انلعبت',played],['نسبة النجاح',played?Math.round(won/played*100)+'%':'—']].map(([a,b])=>`<div class="k">${a}<b>${b}</b></div>`).join('');
+  $('#games').innerHTML='<tr><th>المهمة</th><th>انلعبت</th><th>نجحت</th><th>النسبة</th></tr>'+Object.values(d.games).sort((a,b)=>b.played-a.played).map(g=>{const p=g.played?g.won/g.played:0;return `<tr><td><b>${g.name}</b></td><td>${g.played}</td><td>${g.won}</td><td><div class="bar"><i style="width:${p*100}%"></i></div></td></tr>`}).join('');
+  $('#live').innerHTML=d.live.length?'<tr><th>الكود</th><th>الاسم</th><th>المرحلة</th><th>لاعبين</th><th>❤️</th><th>مهمات</th></tr>'+d.live.map(l=>`<tr><td dir="ltr">${l.code}</td><td>${l.name} · ${l.type}</td><td>${l.phase}</td><td>${l.players}</td><td>${l.hearts}</td><td>${l.done}/12</td></tr>`).join(''):'<tr><td class="sub">ما في قعدات شغّالة هلق</td></tr>';
+  $('#days').innerHTML='<tr><th>اليوم</th><th>قعدات</th><th>لاعبين</th></tr>'+Object.entries(d.days).sort().reverse().slice(0,14).map(([k,v])=>`<tr><td dir="ltr">${k}</td><td>${v.sessions}</td><td>${v.joins}</td></tr>`).join('');
+}
+$('#go').onclick=()=>{KEY=$('#key').value.trim();load()};
+if(KEY)load(); setInterval(()=>{if(KEY&&$('#login').hidden)load()},10000);
+</script>
+</body></html>

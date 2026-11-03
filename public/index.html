@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#2b59ff">
+<title>قعدة فزعة</title>
+<meta name="description" content="لعبة جماعية: يا منطلع سوا، يا منوقع سوا — إعداد م. إياد حلوبي">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Changa:wght@500;700;800&family=Cairo:wght@500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="top">
+  <div class="brand"><span class="lamp"></span><b>قعدة <i>فزعة</i></b></div>
+  <div class="hearts" id="hearts"></div>
+  <div class="tbtns">
+    <button id="bTheme" class="ico" aria-label="الوضع">🌙</button>
+    <button id="bHelp" class="ico" aria-label="كيف منلعب">؟</button>
+    <button id="bExit" class="ico" aria-label="إنهاء" hidden>⏹</button>
+  </div>
+</div>
+<div id="tick"><span id="tickTxt">📡 بلاغ جديد · 12 مهمة · 3 قلوب للكل · يا منطلع سوا يا منوقع سوا</span></div>
+<main id="app"></main>
+<div id="toast"></div>
+<div id="modal" hidden><div class="sheet"><button class="x" id="mClose">✕</button><div id="mBody"></div></div></div>
+<script src="games.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
