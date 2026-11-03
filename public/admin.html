@@ -29,7 +29,7 @@ button{background:var(--a);color:#fff;font-weight:800;box-shadow:3px 3px 0 var(-
   <div class="card" style="margin-top:14px"><h3 style="font-family:Changa;margin-bottom:8px">المهمات — قديش انلعبت وقديش نجحوا فيها</h3><table id="games"></table></div>
   <div class="card" style="margin-top:14px"><h3 style="font-family:Changa;margin-bottom:8px">القعدات الشغّالة هلق</h3><table id="live"></table></div>
   <div class="card" style="margin-top:14px"><h3 style="font-family:Changa;margin-bottom:8px">آخر الأيام</h3><table id="days"></table></div>
-  <p class="sub" style="margin-top:10px">بتتحدّث كل 10 ثواني · الإحصائيات العامة كمان على <a href="/stats">/stats</a></p>
+  <p class="sub" style="margin-top:10px">بتتحدّث كل 10 ثواني · الإحصائيات كمان على <code>/stats?key=</code></p>
 </div>
 <p class="sub">إعداد م. إياد حلوبي · @eyad.hloubi</p>
 </div>
@@ -41,9 +41,10 @@ async function load(){
   const played=Object.values(d.games).reduce((a,g)=>a+g.played,0), won=Object.values(d.games).reduce((a,g)=>a+g.won,0);
   $('#kpis').innerHTML=[['قعدات انفتحت',d.sessions],['لاعبين فاتوا',d.joins],['قعدات خلصت',d.finals],['قعدات 12/12',d.perfect],['مهمات انلعبت',played],['نسبة النجاح',played?Math.round(won/played*100)+'%':'—']].map(([a,b])=>`<div class="k">${a}<b>${b}</b></div>`).join('');
   $('#games').innerHTML='<tr><th>المهمة</th><th>انلعبت</th><th>نجحت</th><th>النسبة</th></tr>'+Object.values(d.games).sort((a,b)=>b.played-a.played).map(g=>{const p=g.played?g.won/g.played:0;return `<tr><td><b>${g.name}</b></td><td>${g.played}</td><td>${g.won}</td><td><div class="bar"><i style="width:${p*100}%"></i></div></td></tr>`}).join('');
-  $('#live').innerHTML=d.live.length?'<tr><th>الكود</th><th>الاسم</th><th>المرحلة</th><th>لاعبين</th><th>❤️</th><th>مهمات</th></tr>'+d.live.map(l=>`<tr><td dir="ltr">${l.code}</td><td>${l.name} · ${l.type}</td><td>${l.phase}</td><td>${l.players}</td><td>${l.hearts}</td><td>${l.done}/12</td></tr>`).join(''):'<tr><td class="sub">ما في قعدات شغّالة هلق</td></tr>';
+  $('#live').innerHTML=d.live.length?'<tr><th>الكود</th><th>الاسم</th><th>المرحلة</th><th>لاعبين</th><th>❤️</th><th>مهمات</th><th></th></tr>'+d.live.map(l=>`<tr><td dir="ltr">${l.code}</td><td>${l.name} · ${l.type}</td><td>${l.phase}</td><td>${l.players}</td><td>${l.hearts}</td><td>${l.done}/12</td><td><button onclick="closeRoom('${l.code}')" style="padding:4px 10px;font-size:13px;background:#ff6b2c">سكّر</button></td></tr>`).join(''):'<tr><td class="sub">ما في قعدات شغّالة هلق</td></tr>';
   $('#days').innerHTML='<tr><th>اليوم</th><th>قعدات</th><th>لاعبين</th></tr>'+Object.entries(d.days).sort().reverse().slice(0,14).map(([k,v])=>`<tr><td dir="ltr">${k}</td><td>${v.sessions}</td><td>${v.joins}</td></tr>`).join('');
 }
+async function closeRoom(c){if(!confirm('تسكّر القعدة '+c+'؟'))return;await fetch('/admin/close?key='+encodeURIComponent(KEY)+'&code='+c,{method:'POST'});load()}
 $('#go').onclick=()=>{KEY=$('#key').value.trim();load()};
 if(KEY)load(); setInterval(()=>{if(KEY&&$('#login').hidden)load()},10000);
 </script>

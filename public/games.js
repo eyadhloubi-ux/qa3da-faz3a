@@ -68,14 +68,14 @@ FZ.GM = GM;
 // ======================= 1. عدّوا سوا =======================
 GM.count = {
   icon: '🔢', short: 'عدّوا للعشرين بلا ما تتفقوا',
-  rules: ['كل واحد بيكبس «الرقم الجاي» بأي وقت بدو ياه.', 'إذا كبس اتنين بنفس اللحظة (أقل من نص ثانية) — من الصفر.', 'وما حدا بيكبس مرتين ورا بعض.', 'ممنوع تتفقوا مين بعد مين. بس إحساس.'],
+  rules: ['كل واحد بيكبس «الرقم الجاي» بأي وقت بدو ياه — ولو ورا بعض بعُشر ثانية، عادي.', 'بس إذا كبستوا بنفس اللحظة بالضبط — من الصفر.', 'وما حدا بيكبس مرتين ورا بعض — من الصفر.', 'ممنوع تتفقوا مين بعد مين. بس إحساس.'],
   mount(root, v) {
     this.root = root; this.seq = -1;
     root.innerHTML = `<div class="bar" style="width:100%"><i id="cb" style="width:0"></i></div>
       <div class="big" id="cn">0</div><div class="sub" id="ct">من ${v.target}</div>
       <div class="taunt hidden" id="cm"></div>
       <button class="tappad" id="ctap">الرقم الجاي</button>`;
-    $('#ctap', root).onpointerdown = e => { e.preventDefault(); inp({ a: 'tap' }); vib(20); };
+    $('#ctap', root).onpointerdown = e => { e.preventDefault(); inp({ a: 'tap', at: Math.round(sNow()) }); vib(20); };
     this.update(v);
   },
   update(v) {
@@ -85,7 +85,7 @@ GM.count = {
       if (v.fx.k === 'ok') { FZ.sfx.ok(); m.classList.add('hidden'); $('#cn', r).style.color = P(v.fx.who[0]).color; }
       else {
         FZ.sfx.bad(); flash('#e5383b'); shake($('#cn', r)); m.classList.remove('hidden');
-        m.textContent = v.fx.k === 'clash' ? `💥 ${P(v.fx.who[0]).name} و${P(v.fx.who[1]).name} كبسوا سوا — من الصفر` : `🙃 ${P(v.fx.who[0]).name} ${G(P(v.fx.who[0]), 'كبس', 'كبست')} مرتين ورا بعض — من الصفر`;
+        m.textContent = v.fx.k === 'clash' ? `💥 ${P(v.fx.who[0]).name} و${P(v.fx.who[1]).name} كبسوا بنفس اللحظة — من الصفر` : `🙃 ${P(v.fx.who[0]).name} ${G(P(v.fx.who[0]), 'كبس', 'كبست')} مرتين ورا بعض — من الصفر`;
       }
     }
     this.seq = v.seq;
@@ -221,7 +221,7 @@ GM.glass = {
 // ======================= 6. الجسر =======================
 GM.bridge = {
   icon: '🌉', short: 'حطوا الألواح قدّام الراكض بوقتها',
-  rules: ['في راكض عم يقطع جسر، وكل لوح إلو صاحب (بلونه).', 'حط لوحك لما يكون الراكض عاللوح اللي قبله بالضبط.', 'إذا بكّرت بيوقع اللوح وبتستنى ثانية ونص. إذا تأخرت الراكض بيوقع وبترجعوا من الأول.', 'لازم يقطع الجسر كله قبل ما يخلص الوقت.'],
+  rules: ['في راكض عم يقطع جسر، وكل لوح إلو صاحب (بلونه) — والترتيب مخربط: ممكن يرجع دورك ورا بعض.', 'حط لوحك لما يكون الراكض عاللوح اللي قبله بالضبط.', 'إذا بكّرت بيوقع اللوح وبتستنى ثانية ونص. إذا تأخرت الراكض بيوقع وبترجعوا من الأول.', 'لازم يقطع الجسر كله قبل ما يخلص الوقت.'],
   mount(root, v) {
     this.root = root; this.v = v; this.at = Date.now(); this.seq = v.seq;
     root.innerHTML = `<canvas class="full" id="brc" width="700" height="300"></canvas><div class="sub" id="brs"></div>
@@ -383,26 +383,33 @@ GM.drum = {
 
 // ======================= 10. البازل المقسوم =======================
 function puzzleImage(seed) {
+  // مشهد «الحارة» — كل قطعة فيها شي مميز لتتعرفوا عليها
   const r = rng(seed), cv = document.createElement('canvas'); cv.width = cv.height = 500; const c = cv.getContext('2d');
-  const pal = ['#2b59ff', '#ff6b2c', '#c6f432', '#7b2ff7', '#12a36b', '#ffd400', '#e8336d'];
-  const pk = () => pal[Math.floor(r() * pal.length)];
-  const g = c.createLinearGradient(0, 0, 500, 500); g.addColorStop(0, pk()); g.addColorStop(1, pk()); c.fillStyle = g; c.fillRect(0, 0, 500, 500);
-  for (let i = 0; i < 9; i++) { c.fillStyle = pk(); c.globalAlpha = .85; const a = r() * 6.28; c.save(); c.translate(250, 250); c.rotate(a); c.fillRect(0, -12, 400, 24 + r() * 30); c.restore(); }
-  c.globalAlpha = 1;
-  c.fillStyle = '#141a3a'; c.beginPath(); c.arc(250, 250, 150, 0, 7); c.fill(); c.lineWidth = 10; c.strokeStyle = '#16161d'; c.stroke();
-  c.strokeStyle = 'rgba(198,244,50,.6)'; c.lineWidth = 5; [50, 100].forEach(rr => { c.beginPath(); c.arc(250, 250, rr, 0, 7); c.stroke(); });
-  c.fillStyle = '#ff6b2c'; c.fillRect(110, 205, 280, 92); c.strokeStyle = '#16161d'; c.lineWidth = 8; c.strokeRect(110, 205, 280, 92);
-  c.fillStyle = '#fff'; c.font = '800 70px Changa'; c.textAlign = 'center'; c.direction = 'rtl'; c.fillText('فزعة', 250, 275);
-  c.font = '70px serif'; [['🔥', 70, 90], ['🥁', 430, 90], ['🧩', 70, 450], ['🌉', 430, 450], ['💣', 250, 80], ['⚖️', 250, 470]].forEach(([e, x, y]) => c.fillText(e, x, y + 25));
-  for (let i = 0; i < 30; i++) { c.fillStyle = r() > .5 ? '#fff' : '#16161d'; c.beginPath(); c.arc(r() * 500, r() * 500, 3 + r() * 6, 0, 7); c.fill(); }
-  return cv.toDataURL('image/jpeg', 0.85);
+  const night = r() > 0.5;
+  const sky = c.createLinearGradient(0, 0, 0, 330); sky.addColorStop(0, night ? '#121735' : '#7fb8ff'); sky.addColorStop(1, night ? '#3b2f7a' : '#ffd9a8'); c.fillStyle = sky; c.fillRect(0, 0, 500, 500);
+  for (let i = 0; i < 30 && night; i++) { c.fillStyle = '#fff'; c.beginPath(); c.arc(r() * 500, r() * 200, 1 + r() * 2.5, 0, 7); c.fill(); }
+  c.fillStyle = night ? '#f3f1ff' : '#ffd400'; c.beginPath(); c.arc(90 + r() * 320, 80, 42, 0, 7); c.fill(); c.lineWidth = 6; c.strokeStyle = '#16161d'; c.stroke();
+  c.fillStyle = '#fff'; [[60, 150], [330, 120]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 22, 0, 7); c.arc(x + 26, y - 10, 28, 0, 7); c.arc(x + 56, y, 22, 0, 7); c.fill(); });
+  const pal = ['#2b59ff', '#ff6b2c', '#c6f432', '#7b2ff7', '#12a36b', '#e8336d'];
+  let x = 0; let k = 0;
+  while (x < 500) { const w = 70 + r() * 40, hgt = 150 + r() * 130, col = pal[k++ % pal.length];
+    c.fillStyle = col; c.fillRect(x, 400 - hgt, w, hgt); c.lineWidth = 6; c.strokeStyle = '#16161d'; c.strokeRect(x, 400 - hgt, w, hgt);
+    for (let yy = 400 - hgt + 16; yy < 380; yy += 34) for (let xx = x + 12; xx < x + w - 20; xx += 26) { c.fillStyle = r() > 0.35 ? '#ffe9a8' : '#3a3f63'; c.fillRect(xx, yy, 14, 18); c.lineWidth = 3; c.strokeRect(xx, yy, 14, 18); }
+    x += w; }
+  c.fillStyle = '#16161d'; c.fillRect(0, 400, 500, 100); c.fillStyle = '#ffd400'; for (let i = 0; i < 6; i++) c.fillRect(20 + i * 85, 445, 50, 10);
+  c.fillStyle = '#ff6b2c'; c.save(); c.translate(250, 225); c.rotate(-0.08); c.fillRect(-120, -48, 240, 90); c.lineWidth = 8; c.strokeRect(-120, -48, 240, 90); c.fillStyle = '#fff'; c.font = '800 66px Changa'; c.textAlign = 'center'; c.direction = 'rtl'; c.fillText('فزعة', 0, 24); c.restore();
+  c.fillStyle = '#16161d'; c.save(); c.translate(250, 160); c.rotate(0.05); c.fillRect(-62, -26, 124, 46); c.fillStyle = '#fff'; c.font = '800 34px Changa'; c.textAlign = 'center'; c.direction = 'rtl'; c.fillText('قعدة', 0, 10); c.restore();
+  c.font = '54px serif'; c.textAlign = 'center'; [['🚒', 110, 470], ['🧯', 400, 470], ['🔥', 60, 330], ['💧', 440, 330], ['🎈', 450, 60], ['🐈', 250, 480]].forEach(([e, xx, yy]) => c.fillText(e, xx, yy));
+  return cv.toDataURL('image/jpeg', 0.88);
 }
 GM.puzzle = {
   icon: '🧩', short: 'ركّبوا الصورة، كل واحد بيحرّك قطعه بس',
-  rules: ['صورة وحدة مقسومة 25 قطعة، وكل واحد معه قطع بس هو بيقدر يحرّكها.', 'اكبس قطعة من قطعك، وبعدين اكبس مكانها بالصورة.', 'احكوا مع بعض: «هاد طرف الدايرة، إلك؟»', 'لازم الصورة تكمل قبل ما يخلص الوقت.'],
+  rules: ['صورة وحدة مقسومة 25 قطعة، والصورة الكاملة قدّامكن فوق لتعرفوا لوين لازم توصلوا.', 'كل واحد معه قطع بس هو بيقدر يحرّكها.', 'اكبس قطعة من قطعك، وبعدين اكبس مكانها بالصورة.', 'احكوا مع بعض: «هاد طرف الدايرة، إلك؟»', 'لازم الصورة تكمل قبل ما يخلص الوقت.'],
   mount(root, v) {
     this.root = root; this.v = v; this.sel = null; this.img = puzzleImage(v.seed);
-    root.innerHTML = `<div class="pboard" id="pzb"></div><div class="sub" id="pzs"></div><div class="tray" id="pzt"></div>`;
+    root.innerHTML = `<div class="pref" id="pzr"><img src="${this.img}"><div><b>هي الصورة اللي لازم توصلولها 🎯</b><div class="sub" style="text-align:right">اكبس لتكبّرها</div></div></div>
+      <div class="pboard" id="pzb"></div><div class="sub" id="pzs"></div><div class="tray" id="pzt"></div>`;
+    $('#pzr', root).onclick = () => { const o = h(`<div style="position:fixed;inset:0;z-index:55;background:rgba(10,10,20,.8);display:grid;place-items:center" ><img src="${this.img}" style="width:min(90vw,420px);border:4px solid #fff;border-radius:14px"></div>`); o.onclick = () => o.remove(); document.body.appendChild(o); };
     this.update(v);
   },
   bg(id) { const x = id % 5, y = Math.floor(id / 5); return `background-image:url(${this.img});background-position:${x * 25}% ${y * 25}%`; },
@@ -478,34 +485,47 @@ GM.twister = {
       this.raf = requestAnimationFrame(loop);
     }; loop();
   },
-  update(v) { this.v = v; },
+  update(v) { this.v = v; if (this.circles) this.circles = this.circles.filter(o => v.act.includes(o.pid)); },
   unmount() { cancelAnimationFrame(this.raf); if (this.ov) this.ov.remove(); this.ov = null; this.root = null; }
 };
 
 // ======================= 12. الإطفائية =======================
 GM.fire = {
-  icon: '🧯', short: 'طفّوا النار عند كل واحد بخزان مي واحد',
-  rules: ['النار بتولّع عشوائياً عند أي واحد، وبتكبر مع الوقت.', 'اكبس عالنار عندك لتطفيها — كل كبسة بتاخد مي من الخزان المشترك.', 'كبسة بالفاضي = مي مهدورة. وكل شوي بتطلع حنفية عند حدا: عبّي فيها الخزان.', 'إذا نار وحدة كبرت للآخر أو خلصت المي — خسرتوا. صمدوا لآخر الوقت.'],
+  icon: '🧯', short: 'الحارة عم تحترق — كل واحد بيطفي بنايته',
+  rules: ['كل واحد إلو بناية بالحارة، والنار بتولّع بكل البنايات سوا من أول ثانية.', 'اكبس عالشباك اللي عم يحترق لتطفيه — كل كبسة بتاخد مي من الخزان المشترك.', 'النار بتكبر، وإذا كبرت كتير بتنتقل للشباك اللي جنبها. كبسة عالفاضي = مي مهدورة.', 'كل شوي بتطلع حنفية عند حدا: عبّي الخزان للكل.', 'إذا شباك احترق للآخر أو خلصت المي — خسرتوا. صمدوا لآخر الوقت.'],
   mount(root, v) {
-    this.root = root; this.els = new Map();
-    root.innerHTML = `<div style="width:100%"><div class="hud"><b>💧 الخزان</b><span class="sub" id="fo"></span></div><div class="bar"><i id="ft"></i></div></div>
-      <div class="field" id="ff"><button class="btn main faucet hidden" id="fc">🚰 عبّي الخزان!</button></div>`;
-    const ff = $('#ff', root);
-    ff.onpointerdown = e => { if (e.target === ff) { inp({ a: 'miss' }); FZ.toast('💧 هدرت مي'); } };
-    $('#fc', root).onpointerdown = e => { e.preventDefault(); e.stopPropagation(); inp({ a: 'fill' }); vib(10); tone(500, 0.05, 'sine', .1); };
-    this.update(v);
+    this.root = root; root.style.justifyContent = 'flex-start';
+    root.innerHTML = `<div class="city" id="fcity"></div>
+      <div class="tankrow"><b>💧</b><div class="bar"><i id="ft"></i></div><b id="ftn" style="font-family:Changa;min-width:34px;text-align:center"></b></div>
+      <div class="bwrap" id="fb"></div>
+      <button class="btn main faucet hidden" id="fc">🚰 عبّي الخزان للكل!</button>`;
+    $('#fc', root).onpointerdown = e => { e.preventDefault(); inp({ a: 'fill' }); vib(10); tone(500, 0.05, 'sine', .1); };
+    this.built = ''; this.update(v);
   },
   update(v) {
-    const r = this.root, ff = $('#ff', r); $('#ft', r).style.width = (v.tank / v.max * 100) + '%'; $('#ft', r).style.background = v.tank / v.max < 0.25 ? 'var(--b)' : 'var(--a)';
-    $('#fo', r).textContent = v.others ? `عند الباقيين ${v.others} 🔥` : 'الباقيين نضاف ✨';
+    const r = this.root; if (!r) return;
+    const k = v.tank / v.max; $('#ft', r).style.width = (k * 100) + '%'; $('#ft', r).style.background = k < 0.25 ? 'var(--b)' : 'var(--a)'; $('#ftn', r).textContent = Math.max(0, Math.round(v.tank));
     $('#fc', r).classList.toggle('hidden', !v.faucet);
-    const ids = new Set(v.fires.map(f => f.id));
-    for (const [id, el] of this.els) if (!ids.has(id)) { el.remove(); this.els.delete(id); FZ.sfx.ok(); }
-    v.fires.forEach(f => {
-      let el = this.els.get(f.id);
-      if (!el) { el = h(`<div class="fireE">🔥</div>`); el.onpointerdown = e => { e.preventDefault(); e.stopPropagation(); inp({ a: 'hit', id: f.id }); vib(10); noise(0.05, 0.15, 2000); }; ff.appendChild(el); this.els.set(f.id, el); vib(30); }
-      el.style.right = (f.x * 100) + '%'; el.style.top = (f.y * 100) + '%'; el.style.fontSize = (34 + f.size * 0.9) + 'px';
-      el.style.filter = f.size > 75 ? 'drop-shadow(0 0 14px red)' : '';
+    $('#fcity', r).innerHTML = v.city.map((b, i) => { const p = P(b.pid); const mine = v.mine.some(m => m.id === b.id); return `<div class="bmini${b.max > 70 ? ' hot' : ''}${mine ? ' me' : ''}" style="background:${p.color};height:${46 + (i * 17) % 26}px">${b.n ? `<span class="fl" style="font-size:${12 + Math.min(b.n, 6) * 3}px">🔥</span>` : ''}${esc((p.name || '؟')[0])}</div>`; }).join('');
+    const sig = v.mine.map(m => m.id).join(',');
+    if (this.built !== sig) {
+      this.built = sig; const fb = $('#fb', r);
+      fb.innerHTML = v.mine.map(m => { const p = P(FZ.me); return `<div class="building" data-b="${m.id}" style="background:${p.color}"><div class="roof">🏢 بنايتك</div>${Array.from({ length: 12 }, (_, w) => `<div class="win" data-w="${w}"></div>`).join('')}</div>`; }).join('');
+      $$('.win', fb).forEach(el => el.onpointerdown = e => {
+        e.preventDefault(); const id = el.dataset.f;
+        if (id) { inp({ a: 'hit', id: +id }); vib(10); noise(0.05, 0.15, 2000); el.style.transform = 'scale(.9)'; setTimeout(() => el.style.transform = '', 90); }
+        else { inp({ a: 'miss' }); FZ.toast('💧 هدرت مي'); }
+      });
+    }
+    v.mine.forEach(m => {
+      const bel = $(`.building[data-b="${m.id}"]`, r); if (!bel) return;
+      const byW = {}; m.fires.forEach(f => byW[f.w] = f);
+      $$('.win', bel).forEach((el, w) => {
+        const f = byW[w];
+        if (f) { el.dataset.f = f.id; el.className = 'win burn'; el.innerHTML = `<span class="f" style="font-size:${18 + f.size * 0.32}px">🔥</span>`; }
+        else { delete el.dataset.f; el.className = 'win' + ((w * 7 + m.id) % 5 === 0 ? ' dark' : ''); el.innerHTML = ''; }
+      });
     });
-  }
+  },
+  unmount() { this.root = null; }
 };

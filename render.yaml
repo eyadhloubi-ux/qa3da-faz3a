@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: node server.js
-    healthCheckPath: /stats
+    healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: "20"
