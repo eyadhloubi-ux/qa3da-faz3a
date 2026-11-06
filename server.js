@@ -172,7 +172,7 @@ const GAMES = {
     name: 'عبّوا الكاسة', min: 2, dur: { easy: 60, mid: 40 }, rate: 100,
     init(c) {
       const tl = shuffle([...TOOLS]); const tools = {}; c.act.forEach((p, i) => tools[p] = tl[i % tl.length]);
-      return { lvl: 20, hold: 0, tools, last: {}, fx: null, seq: 0, decay: (6 + 0.5 * c.n) * (c.diff === "hard" ? 1.6 : 1), lo: 60, hi: 75 };
+      return { lvl: 20, hold: 0, tools, last: {}, fx: null, seq: 0, decay: (6 + 0.5 * c.n) * (c.diff === "hard" ? 1.35 : 1), lo: 60, hi: 75 };
     },
     tick(c, s, dt) {
       s.lvl = Math.max(0, s.lvl - s.decay * dt);
@@ -189,7 +189,7 @@ const GAMES = {
       s.seq++; s.dirty = true;
     },
     view(c, s, pid) { return { lvl: s.lvl, hold: s.hold, tool: s.tools[pid], lo: s.lo, hi: s.hi, fx: s.fx, seq: s.seq }; },
-    drop(c, s, pid) { delete s.tools[pid]; s.decay = (6 + 0.5 * c.n) * (c.diff === "hard" ? 1.6 : 1); },
+    drop(c, s, pid) { delete s.tools[pid]; s.decay = (6 + 0.5 * c.n) * (c.diff === "hard" ? 1.35 : 1); },
     why: 'ما ضلّت الكاسة عالخط 5 ثواني'
   },
   bridge: {
@@ -301,7 +301,7 @@ const GAMES = {
   },
   pulse: {
     name: 'النبض', min: 2, dur: { easy: 15, mid: 18 }, noTimer: true,
-    init(c) { const S = c.diff === 'easy' ? 8 : 12; return { beat: 600, start: now() + 1200, L: 8, S, pass: { easy: 0.7, mid: 0.8, hard: 0.9 }[c.diff], taps: {}, res: null }; },
+    init(c) { const S = c.diff === 'easy' ? 8 : 12; return { beat: 600, start: now() + 1200, L: 8, S, pass: { easy: 0.6, mid: 0.7, hard: 0.8 }[c.diff], taps: {}, res: null }; },
     tick(c, s) {
       if (s.res) return;
       if (now() > s.start + (s.L + s.S) * s.beat + 800) {

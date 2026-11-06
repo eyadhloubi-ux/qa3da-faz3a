@@ -303,8 +303,8 @@ GM.bomb = {
 // ======================= 8. النبض =======================
 GM.pulse = {
   noTimerUI: true,
-  icon: '💓', short: 'كملوا الإيقاع بعد ما يسكت', hard: 'لازم ضبط 90% (المتوسط 80%، السهل 70%)',
-  rules: ['بيشتغل إيقاع 8 دقّات — دقّوا معه.', 'بعدين بيسكت… وكلكن لازم تكملوا تدقّوا عنفس الإيقاع.', 'السهل: 8 دقّات بالسكوت ولازم ضبط 70%. المتوسط: 12 دقة و80%. الصعب: 12 دقة و90%.'],
+  icon: '💓', short: 'كملوا الإيقاع بعد ما يسكت', hard: 'لازم ضبط 80% (المتوسط 70%، السهل 60%)',
+  rules: ['بيشتغل إيقاع 8 دقّات — دقّوا معه.', 'بعدين بيسكت… وكلكن لازم تكملوا تدقّوا عنفس الإيقاع.', 'السهل: 8 دقّات بالسكوت ولازم ضبط 60%. المتوسط: 12 دقة و70%. الصعب: 12 دقة و80%.'],
   mount(root, v) {
     this.root = root; this.v = v; this.lastJ = -99;
     root.innerHTML = `<div class="gname" id="pt">استعدوا…</div><div class="beat" id="pb"></div><button class="tappad" id="pp">دُق</button><div id="pr" style="width:100%"></div>`;
@@ -500,10 +500,10 @@ GM.puzzle = {
 // ======================= 10. رجّعوا الكهربا =======================
 GM.power = {
   icon: '⚡', short: 'لفّوا الأسلاك ورجّعوا الكهربا للحارة', hard: 'الشبكة 6×6 بدل 4×4',
-  rules: ['المولّدة ⚡ بالنص، والأسلاك مقطّعة بكل الحارة.', 'كل خانة إلها صاحب (بلونه) — بس صاحبها بيقدر يلفّها، بكبسة.', 'لفّوا الخانات لحد ما توصل الكهربا لكل الخانات وتضوي كل البيوت 💡.', 'الكل بيشتغل بنفس اللحظة. احكوا: «لفّ يلّي جنبك!»', 'السهل والمتوسط 4×4، والصعب 6×6.'],
+  rules: ['المولّدة ⚡ بالنص، والأسلاك مقطّعة، وبنايات الحارة فوق كلها مطفية.', 'كل خانة إلها صاحب (بلونه) — بس صاحبها بيقدر يلفّها، بكبسة.', 'كل بيت 🏠 بالشبكة إلو رقم وبناية فوق بنفس الرقم — لما توصلو الكهربا بتضوي شبابيك البناية.', 'لازم تضوي كل البنايات.', 'الكل بيشتغل بنفس اللحظة. احكوا: «لفّ يلّي جنبك!»', 'السهل والمتوسط 4×4، والصعب 6×6.'],
   mount(root, v) {
     this.root = root; this.v = v;
-    root.innerHTML = `<div class="sub" id="pwh"></div><canvas class="full" id="pwc" width="600" height="600" style="max-width:360px;aspect-ratio:1"></canvas><div class="row" style="align-items:center;justify-content:center;gap:6px" id="pwl"></div>`;
+    root.innerHTML = `<div class="pwcity" id="pwb"></div><div class="sub" id="pwh"></div><canvas class="full" id="pwc" width="600" height="600" style="max-width:360px;aspect-ratio:1"></canvas><div class="row" style="align-items:center;justify-content:center;gap:6px" id="pwl"></div>`;
     const cv = $('#pwc', root); this.ctx = cv.getContext('2d');
     cv.onpointerdown = e => { e.preventDefault(); const rc = cv.getBoundingClientRect(); const G = this.v.G; const x = Math.floor((e.clientX - rc.left) / rc.width * G), y = Math.floor((e.clientY - rc.top) / rc.height * G); const i = y * G + x; if (i < 0 || i >= G * G) return; if (this.v.owners[i] !== FZ.me) { { const o = P(this.v.owners[i]); FZ.toast('هاي لـ' + o.name + ' — قلّ' + G(o, 'و', 'ا') + ' ' + G(o, 'يلفّها', 'تلفّها')); } return; } inp({ a: 'rot', i }); vib(12); tone(900, 0.04, 'square', 0.08); };
     this.update(v);
@@ -511,6 +511,10 @@ GM.power = {
   update(v) {
     this.v = v; const on = v.lit.filter(Boolean).length, N = v.G * v.G;
     $('#pwh', this.root).innerHTML = `💡 ${on}/${N} خانة فيها كهربا · خاناتك بإطار <b style="color:${P(FZ.me).color}">لونك</b>`;
+    // كل بيت بالشبكة إلو بناية فوق، وشبابيكها بتضوي لما توصلها الكهربا
+    const deg = m => (m & 1) + (m >> 1 & 1) + (m >> 2 & 1) + (m >> 3 & 1);
+    const houses = v.masks.map((m, i) => i !== v.src && deg(m) === 1 ? i : -1).filter(i => i >= 0); this.houses = houses;
+    $('#pwb', this.root).innerHTML = houses.map((i, k) => `<div class="pwb${v.lit[i] ? ' on' : ''}" style="height:${46 + (k * 13) % 24}px"><b>${k + 1}</b>${'<i></i>'.repeat(6)}</div>`).join('');
     this.draw();
   },
   draw() {
@@ -525,7 +529,7 @@ GM.power = {
       c.lineCap = 'round';
       [[1, cx, y], [2, x + S, cy], [4, cx, y + S], [8, x, cy]].forEach(([bit, ex, ey]) => { if (!(m & bit)) return; c.strokeStyle = '#16161d'; c.lineWidth = S * 0.2; c.beginPath(); c.moveTo(cx, cy); c.lineTo(ex, ey); c.stroke(); c.strokeStyle = lit ? '#ffd400' : '#6b6a75'; c.lineWidth = S * 0.11; c.beginPath(); c.moveTo(cx, cy); c.lineTo(ex, ey); c.stroke(); });
       if (i === v.src) { c.fillStyle = '#16161d'; c.beginPath(); c.arc(cx, cy, S * 0.3, 0, 7); c.fill(); c.font = (S * 0.4) + 'px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('⚡', cx, cy); }
-      else if (deg(m) === 1) { c.font = (S * 0.42) + 'px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(lit ? '💡' : '🏠', cx, cy); }
+      else if (deg(m) === 1) { c.font = (S * 0.42) + 'px serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(lit ? '💡' : '🏠', cx, cy); const k = (this.houses || []).indexOf(i); if (k >= 0) { c.fillStyle = '#16161d'; c.beginPath(); c.arc(x + S * 0.2, y + S * 0.2, S * 0.13, 0, 7); c.fill(); c.fillStyle = '#fff'; c.font = '800 ' + (S * 0.16) + 'px Changa'; c.fillText(k + 1, x + S * 0.2, y + S * 0.21); } }
       else { c.fillStyle = lit ? '#ffd400' : '#6b6a75'; c.beginPath(); c.arc(cx, cy, S * 0.09, 0, 7); c.fill(); }
     }
   }
