@@ -65,14 +65,23 @@ const COLORS = ['#2b59ff', '#ff6b2c', '#7b2ff7', '#e8336d', '#12a36b', '#d99a00'
 const CODE_CH = 'ABCDEFGHJKMNPQRSTUVWXYZ';
 
 // ---------------- المهمات ----------------
-const SENT = ['صار بدها قعدة', 'يا منطلع سوا يا منوقع سوا', 'إيد وحدة ما بتصفق', 'الكاسة مخزوقة يا جماعة', 'فزعة يا شباب فزعة', 'القعدة بتحلى بوجودكن', 'قوموا فزعولنا شوي', 'عالهدا بتوصل يا حلو'];
-const AR = 'ابتثجحخدذرزسشصضطظعغفقكلمنهوي'.split('');
+// 3 مستويات: سهل (وقت أطول) · متوسط (وقت أقصر) · صعب (نفس وقت المتوسط + المهمة نفسها أصعب)
+const LEVELS = ['easy', 'mid', 'hard'];
+const TESTHOOK = process.env.TESTHOOK === '1'; // للاختبار الداخلي فقط
+const norm = ch => ({ 'أ': 'ا', 'إ': 'ا', 'آ': 'ا', 'ى': 'ي', 'ؤ': 'و', 'ئ': 'ي' }[ch] || ch);
+const SENT_SHORT = ['صار بدها قعدة', 'يا منطلع سوا يا منوقع سوا', 'ايد وحدة ما بتصفق', 'الكاسة مخزوقة يا جماعة', 'فزعة يا شباب', 'القعدة بتحلى فيكن', 'شاي وكعك وسهرة', 'الجار قبل الدار', 'كل تاخيرة فيها خيرة', 'الحارة كلها فزعت', 'مين جاب الكنافة', 'خلصت المي يا شباب', 'حطوا ايديكن بايدينا', 'البرد قارص اليوم', 'الضحكة بتطول العمر', 'يلا عالسطح نسهر'];
+const SENT_LONG = ['يا منطلع سوا يا منوقع سوا وما حدا بيضل لحالو', 'الحارة كلها قامت فزعة لما شافت الدخان طالع من الشباك', 'ما في شي بيصعب على قعدة متفقة وقلبها على بعض', 'جيبوا الكعك والشاي وخلونا نخلص المهمات قبل نص الليل', 'الصبر مفتاح الفرج بس الوقت عم يخلص يا جماعة', 'كل واحد معه حرف وما حدا بيقدر يكتب الجملة لحالو', 'اذا ما فزعنا لبعض اليوم مين رح يفزعلنا بكرا', 'سهرة الخميس ما بتكمل بلا متة وبزر وحكايات زمان'];
+const AR = 'ابتثجحخدذرزسشصضطظعغفقكلمنهويةء'.split('');
 const TOOLS = [{ n: 'إبريق', e: '🫖', a: 10 }, { n: 'قنينة', e: '🍶', a: 7 }, { n: 'كاسة', e: '🥛', a: 5 }, { n: 'معلقة', e: '🥄', a: 2 }];
-const SOUNDS = [{ n: 'طبلة', e: '🥁' }, { n: 'دف', e: '🪘' }, { n: 'صفقة', e: '👏' }, { n: 'جرس', e: '🔔' }, { n: 'صفّارة', e: '📯' }, { n: 'مثلث', e: '🔺' }];
-const SYM = ['★', '☾', '☀', '♣', '♠', '♥', '♦', '✿', '☂', '♫', '⚑', '✈', '☯', '⚓', '✂', '☎', '⌛', '☘', '♛', '⚙', '✉', '☕', '⚡', '❄', '♞', '✦', '◐'];
+const SYM = ['Ϙ', 'Ѧ', 'ƛ', 'Ϟ', 'Ѭ', 'ϗ', 'Ͽ', 'Ӭ', 'Ҩ', '☆', 'ټ', '¿', '¶', 'Ѣ', 'Ѫ', 'Ҋ', 'Ω', 'Ѯ', 'ψ', 'Ͼ', 'ϫ', 'Ѳ', 'Ҕ', '©', 'æ', '★', 'ϖ'];
 const BTN_COLORS = ['red', 'blue', 'yellow', 'white'];
 const BTN_WORDS = ['فكّ', 'اضغط', 'وقّف', 'فجّر'];
 const WIRE_COLORS = ['red', 'blue', 'yellow', 'white', 'black'];
+const LIGHT_COLORS = ['red', 'blue', 'yellow', 'green'];
+// جدول الأضواء: تسلسل ← كلمة (نفس الجدول بدليل القارئ)
+const LIGHT_TABLE = [['red', 'blue', 'yellow', 'قلم'], ['blue', 'red', 'green', 'باب'], ['yellow', 'yellow', 'red', 'شمس'], ['green', 'blue', 'blue', 'بحر'], ['red', 'green', 'red', 'نار'], ['blue', 'yellow', 'green', 'ورد'], ['yellow', 'green', 'blue', 'كتاب'], ['green', 'red', 'yellow', 'قمر']];
+// اللوحة الرقمية: الرقم عالشاشة ← شو منكبس
+const NUM_RULE = { 1: { by: 'pos', v: 1 }, 2: { by: 'label', v: 4 }, 3: { by: 'pos', v: 2 }, 4: { by: 'label', v: 1 } };
 
 function wiresAnswer(ws) {
   const n = ws.length, cnt = c => ws.filter(x => x === c).length, last = ws[n - 1];
@@ -82,11 +91,17 @@ function wiresAnswer(ws) {
 }
 function needHold(c, w) { if (c === 'blue' && w === 'وقّف') return true; if (c === 'white') return false; if (w === 'فجّر') return false; if (c === 'red' && w === 'اضغط') return false; return true; }
 const RELEASE_DIGIT = { blue: '4', yellow: '5', red: '1', white: '1' };
+function noRepeatOrder(list) { // ترتيب عشوائي بلا ما يتكرر نفس الشخص ورا بعض قدر الإمكان
+  for (let t = 0; t < 60; t++) { const a = shuffle([...list]); if (a.every((x, i) => i === 0 || x !== a[i - 1])) return a; }
+  return shuffle([...list]);
+}
+function spreadOwners(act, total) { const o = []; const ord = shuffle([...act]); for (let i = 0; i < total; i++) o.push(ord[i % ord.length]); return o; }
+const rotMask = m => ((m << 1) | (m >> 3)) & 15; // N1 E2 S4 W8 — لفّة مع عقارب الساعة
 
 const GAMES = {
   count: {
-    name: 'عدّوا سوا', min: 2, dur: { easy: 90, hard: 45 },
-    init(c) { return { n: 0, target: 20, last: null, lastT: 0, fx: null, seq: 0 }; },
+    name: 'عدّوا سوا', min: 2, dur: { easy: 90, mid: 60 },
+    init(c) { return { n: 0, target: c.diff === 'hard' ? 30 : 20, last: null, lastT: 0, fx: null, seq: 0 }; },
     input(c, s, pid, d) {
       if (d.a !== 'tap') return;
       const tn = now(); let t = +d.at || tn; if (Math.abs(t - tn) > 1500) t = tn;
@@ -98,75 +113,66 @@ const GAMES = {
     },
     view(c, s) { return { n: s.n, target: s.target, fx: s.fx, seq: s.seq }; },
     drop(c, s, pid) { if (s.last === pid) s.last = null; },
-    why: 'الوقت خلص قبل العشرين'
+    why: 'الوقت خلص قبل ما توصلوا'
   },
   keyboard: {
-    name: 'الكيبورد المقسوم', min: 2, dur: { easy: 100, hard: 55 },
+    name: 'الكيبورد المقسوم', min: 2, dur: { easy: 100, mid: 70 },
     init(c) {
-      const text = pick(SENT);
-      const letters = shuffle([...new Set(text.replace(/ /g, ''))]);
+      const text = pick(c.diff === 'hard' ? SENT_LONG : SENT_SHORT);
+      const letters = shuffle([...new Set([...text.replace(/ /g, '')].map(norm))]);
       const keys = {}; c.act.forEach(p => keys[p] = []);
-      letters.forEach((ch, i) => keys[c.act[i % c.n]].push(ch));
+      const ord = shuffle([...c.act]); letters.forEach((ch, i) => keys[ord[i % ord.length]].push(ch));
       const pool = shuffle(AR.filter(x => !letters.includes(x)));
       c.act.forEach(p => { for (let k = 0; k < 2 && pool.length; k++) keys[p].push(pool.pop()); shuffle(keys[p]); });
-      return { text, pos: 0, keys, fx: null, seq: 0 };
+      return { text, pos: 0, keys, fx: null, seq: 0, ver: 1 };
     },
     input(c, s, pid, d) {
-      if (d.a !== 'key' || !s.keys[pid] || !s.keys[pid].includes(d.ch)) return;
-      if (d.ch === s.text[s.pos]) {
+      if (d.a !== 'key' || !s.keys[pid]) return;
+      const ch = norm(String(d.ch || ''));
+      if (!s.keys[pid].includes(ch)) return;
+      if (ch === norm(s.text[s.pos])) {
         s.pos++; while (s.text[s.pos] === ' ') s.pos++;
         s.fx = { k: 'ok', who: pid };
         if (s.pos >= s.text.length) { s.seq++; s.dirty = true; return { res: 'win' }; }
-      } else { s.fx = { k: 'bad', who: pid, ch: d.ch }; c.penalty(2000); }
+      } else { s.fx = { k: 'bad', who: pid, ch }; c.penalty(2000); }
       s.seq++; s.dirty = true;
     },
-    view(c, s, pid) { return { text: s.text, pos: s.pos, keys: s.keys[pid] || [], fx: s.fx, seq: s.seq }; },
-    drop(c, s, pid) { const ks = s.keys[pid] || []; delete s.keys[pid]; ks.forEach((ch, i) => s.keys[c.act[i % c.n]].push(ch)); s.seq++; s.dirty = true; },
+    view(c, s, pid) { return { text: s.text, pos: s.pos, keys: s.keys[pid] || [], fx: s.fx, seq: s.seq, ver: s.ver }; },
+    drop(c, s, pid) { const ks = (s.keys[pid] || []); delete s.keys[pid]; const ord = shuffle([...c.act]); ks.forEach((ch, i) => s.keys[ord[i % ord.length]].push(ch)); s.ver++; s.seq++; s.dirty = true; },
     why: 'الجملة ما كملت'
   },
-  balance: {
-    name: 'الميزان', min: 2, dur: { easy: 25, hard: 45 }, survival: true, rate: 66,
-    init(c) { return { x: 0, y: 0, vx: 0, vy: 0, tilt: {}, wx: 0, wy: 0, ang: Math.random() * 6.28, t: 0 }; },
-    tick(c, s, dt) {
-      s.t += dt; let ax = 0, ay = 0;
-      c.act.forEach(p => { const v = s.tilt[p]; if (v) { ax += v[0]; ay += v[1]; } });
-      ax /= c.n; ay /= c.n;
-      const wm = 0.3 + 0.015 * s.t;
-      s.ang += (Math.random() - 0.5) * 2.4 * dt; s.wx = Math.cos(s.ang) * wm; s.wy = Math.sin(s.ang) * wm;
-      s.vx += (ax * 1.8 + s.wx) * dt; s.vy += (ay * 1.8 + s.wy) * dt;
-      s.vx *= 0.985; s.vy *= 0.985; s.x += s.vx * dt; s.y += s.vy * dt;
-      s.dirty = true;
-      if (Math.hypot(s.x, s.y) > 1) return { res: 'lose', why: 'الطابة وقعت عن الصينية' };
-    },
-    input(c, s, pid, d) { if (d.a === 'tilt') s.tilt[pid] = [clamp(+d.x || 0, -1, 1), clamp(+d.y || 0, -1, 1)]; },
-    view(c, s, pid) { return { x: s.x, y: s.y, wx: s.wx, wy: s.wy, mine: s.tilt[pid] || [0, 0] }; },
-    drop(c, s, pid) { delete s.tilt[pid]; }
-  },
   tower: {
-    name: 'البرج', min: 2, dur: { easy: 90, hard: 50 },
-    init(c) { return { blocks: [{ x: 0, w: 0.5 }], order: shuffle([...c.act]), turn: 0, swingAt: now() + 400, speed: 1.6, target: 12, fx: null, seq: 0, falls: 0 }; },
-    input(c, s, pid, d) {
-      if (d.a !== 'drop') return;
-      if (pid !== s.order[s.turn % s.order.length]) return;
-      const x = clamp(+d.x || 0, -0.8, 0.8), top = s.blocks[s.blocks.length - 1], w = top.w;
-      const l = Math.max(top.x - top.w / 2, x - w / 2), r = Math.min(top.x + top.w / 2, x + w / 2), ov = r - l;
-      if (ov <= 0.01) { s.fx = { k: 'fall', who: pid }; s.blocks = [{ x: 0, w: 0.5 }]; s.falls++; s.speed = 1.6; }
-      else {
-        let nb; if (Math.abs(x - top.x) < 0.015) nb = { x: top.x, w: top.w, p: 1 }; else nb = { x: (l + r) / 2, w: ov };
-        s.blocks.push(nb); s.fx = { k: 'ok', who: pid, p: nb.p ? 1 : 0 }; s.speed += 0.08;
-      }
-      s.turn++; s.swingAt = now(); s.seq++; s.dirty = true;
-      if (s.blocks.length - 1 >= s.target) return { res: 'win' };
+    name: 'البرج', min: 2, dur: { easy: 100, mid: 70 },
+    init(c) {
+      const hard = c.diff === 'hard'; const total = Math.max(hard ? 15 : 12, c.n);
+      const queue = noRepeatOrder(spreadOwners(c.act, total));
+      return { blocks: [{ x: 0, w: hard ? 0.42 : 0.5, pid: null }], queue, total, placed: 0, swingAt: now() + 600, speed: hard ? 2.0 : 1.5, acc: hard ? 0.07 : 0.05, snap: hard ? 0.03 : 0.05, fx: null, seq: 0 };
     },
-    view(c, s) { return { blocks: s.blocks, turnPid: s.order[s.turn % s.order.length], swingAt: s.swingAt, speed: s.speed, target: s.target, fx: s.fx, seq: s.seq }; },
-    drop(c, s, pid) { const cur = s.order[s.turn % s.order.length]; s.order = s.order.filter(x => x !== pid); if (cur === pid) s.swingAt = now(); s.seq++; s.dirty = true; },
+    input(c, s, pid, d) {
+      if (d.a !== 'drop' || !s.queue.length || pid !== s.queue[0]) return;
+      const top = s.blocks[s.blocks.length - 1], w = top.w;
+      const x = clamp(+d.x || 0, -0.9, 0.9);
+      const l = Math.max(top.x - w / 2, x - w / 2), r = Math.min(top.x + w / 2, x + w / 2), ov = r - l;
+      s.queue.shift();
+      if (ov <= 0.02) { s.fx = { k: 'fall', who: pid }; s.queue.push(pid); if (s.queue.length > 1 && s.queue[0] === pid) s.queue.push(s.queue.shift()); }
+      else {
+        let nb;
+        if (Math.abs(x - top.x) <= s.snap) nb = { x: top.x, w: Math.min(0.6, w + 0.02), p: 1, pid };
+        else nb = { x: (l + r) / 2, w: ov, pid };
+        s.blocks.push(nb); s.placed++; s.fx = { k: 'ok', who: pid, p: nb.p ? 1 : 0 }; s.speed += s.acc;
+      }
+      s.swingAt = now(); s.seq++; s.dirty = true;
+      if (s.placed >= s.total) return { res: 'win' };
+    },
+    view(c, s) { return { blocks: s.blocks, turnPid: s.queue[0], next: s.queue.slice(1, 4), swingAt: s.swingAt, speed: s.speed, total: s.total, placed: s.placed, fx: s.fx, seq: s.seq }; },
+    drop(c, s, pid) { s.queue = s.queue.map(q => q === pid ? pick(c.act) : q); s.swingAt = now(); s.seq++; s.dirty = true; },
     why: 'البرج ما وصل لفوق'
   },
   glass: {
-    name: 'عبّوا الكاسة', min: 2, dur: { easy: 60, hard: 35 }, rate: 100,
+    name: 'عبّوا الكاسة', min: 2, dur: { easy: 60, mid: 40 }, rate: 100,
     init(c) {
       const tl = shuffle([...TOOLS]); const tools = {}; c.act.forEach((p, i) => tools[p] = tl[i % tl.length]);
-      return { lvl: 20, hold: 0, tools, last: {}, fx: null, seq: 0, decay: 5 + 1.3 * c.n, lo: 60, hi: 75 };
+      return { lvl: 20, hold: 0, tools, last: {}, fx: null, seq: 0, decay: (6 + 0.5 * c.n) * (c.diff === "hard" ? 1.6 : 1), lo: 60, hi: 75 };
     },
     tick(c, s, dt) {
       s.lvl = Math.max(0, s.lvl - s.decay * dt);
@@ -183,14 +189,13 @@ const GAMES = {
       s.seq++; s.dirty = true;
     },
     view(c, s, pid) { return { lvl: s.lvl, hold: s.hold, tool: s.tools[pid], lo: s.lo, hi: s.hi, fx: s.fx, seq: s.seq }; },
-    drop(c, s, pid) { delete s.tools[pid]; s.decay = 5 + 1.3 * c.n; },
+    drop(c, s, pid) { delete s.tools[pid]; s.decay = (6 + 0.5 * c.n) * (c.diff === "hard" ? 1.6 : 1); },
     why: 'ما ضلّت الكاسة عالخط 5 ثواني'
   },
   bridge: {
-    name: 'الجسر', min: 2, dur: { easy: 75, hard: 40 }, rate: 80,
+    name: 'الجسر', min: 2, dur: { easy: 75, mid: 50 }, rate: 80,
     init(c) {
-      const P = Math.min(18, Math.max(12, c.n * 2));
-      // ترتيب مخربط: ممكن يرجع دورك ورا بعض، بس كل واحد إلو لوح عالأقل وما في أكتر من 3 ورا بعض لنفس الشخص
+      const hard = c.diff === 'hard'; const P = Math.min(22, Math.max(12, c.n * 2) + (hard ? 4 : 0));
       let owners;
       for (let tries = 0; tries < 50; tries++) {
         owners = shuffle([...c.act]).slice(0, Math.min(c.n, P));
@@ -199,7 +204,7 @@ const GAMES = {
         let ok = true; for (let i = 3; i < P; i++) if (owners[i] === owners[i - 1] && owners[i] === owners[i - 2] && owners[i] === owners[i - 3]) ok = false;
         if (ok) break;
       }
-      return { P, owners, placed: Array(P).fill(false), r: -1.5, v: 0.8, cool: {}, fx: null, seq: 0, falls: 0 };
+      return { P, owners, placed: Array(P).fill(false), r: -1.5, v: hard ? 1.05 : 0.8, cool: {}, fx: null, seq: 0, falls: 0 };
     },
     tick(c, s, dt) {
       s.r += s.v * dt; const i = Math.floor(s.r);
@@ -210,7 +215,6 @@ const GAMES = {
     input(c, s, pid, d) {
       if (d.a !== 'place') return; const t = now();
       if ((s.cool[pid] || 0) > t) return;
-      // اللوح الجاي إلي قدّام الراكض
       let i = -1; for (let k = Math.max(0, Math.ceil(s.r)); k < s.P; k++) if (s.owners[k] === pid && !s.placed[k]) { i = k; break; }
       if (i < 0) return;
       if (s.r < i - 1) { s.fx = { k: 'early', i, who: pid }; s.cool[pid] = t + 1500; }
@@ -222,72 +226,82 @@ const GAMES = {
     why: 'الراكض ما قطع الجسر'
   },
   bomb: {
-    name: 'فكّ القنبلة', min: 2, dur: { easy: 180, hard: 100 },
+    name: 'فكّ القنبلة', min: 2, dur: { easy: 200, mid: 150 },
+    pagesFor(diff) { return diff === 'hard' ? ['w', 'btn', 'sym', 'num', 'lit'] : ['w', 'btn', 'sym']; },
+    assignPages(s, readers) { s.assign = {}; readers.forEach(p => s.assign[p] = []); s.mods.forEach((pg, i) => s.assign[readers[i % readers.length]].push(pg)); },
+    newNumStage(s) { s.num.display = 1 + Math.floor(Math.random() * 4); s.num.labels = shuffle([1, 2, 3, 4]); },
     init(c) {
       const def = pick(c.act); const readers = c.act.filter(p => p !== def);
       const n = 3 + Math.floor(Math.random() * 3); const wires = []; for (let i = 0; i < n; i++) wires.push(pick(WIRE_COLORS));
       const cols = []; for (let k = 0; k < 6; k++) cols.push(shuffle([...SYM]).slice(0, 7));
       let col, chosen;
-      for (let tries = 0; tries < 200; tries++) {
+      for (let tries = 0; tries < 300; tries++) {
         col = Math.floor(Math.random() * 6); chosen = shuffle([...cols[col]]).slice(0, 4);
-        const others = cols.filter((cc, i) => i !== col && chosen.every(x => cc.includes(x)));
-        if (!others.length) break;
+        if (!cols.some((cc, i) => i !== col && chosen.every(x => cc.includes(x)))) break;
       }
       const order = cols[col].filter(x => chosen.includes(x));
-      const pages = ['w3', 'w4', 'w5', 'btn', 'symA', 'symB'];
-      const assign = {}; readers.forEach(p => assign[p] = []);
-      const m = Math.max(pages.length, readers.length);
-      for (let i = 0; i < m; i++) { const pg = pages[i % pages.length]; const rd = readers[i % readers.length]; if (!assign[rd].includes(pg)) assign[rd].push(pg); }
-      return {
-        def, assign, cols, strikes: 0, fx: null, seq: 0,
-        wires, cut: Array(n).fill(false), wiresDone: false, wAns: wiresAnswer(wires),
-        btn: { color: pick(BTN_COLORS), word: pick(BTN_WORDS), holding: false, strip: null }, btnDone: false,
-        shown: shuffle([...chosen]), order, symPos: 0, symPressed: [], symDone: false
+      const lt = pick(LIGHT_TABLE); const others = shuffle(LIGHT_TABLE.filter(x => x !== lt)).slice(0, 3).map(x => x[3]);
+      const s = {
+        def, mods: this.pagesFor(c.diff), cols, strikes: 0, fx: null, seq: 0,
+        wires, cut: Array(n).fill(false), wAns: wiresAnswer(wires),
+        btn: { color: pick(BTN_COLORS), word: pick(BTN_WORDS), holding: false, strip: null },
+        shown: shuffle([...chosen]), order, symPos: 0, symPressed: [],
+        num: { stage: 0, display: 1, labels: [1, 2, 3, 4] },
+        lit: { seq: lt.slice(0, 3), ans: lt[3], words: shuffle([lt[3], ...others]) },
+        done: {}
       };
+      this.newNumStage(s); this.assignPages(s, readers);
+      return s;
     },
     input(c, s, pid, d) {
       if (pid !== s.def) return;
       const strike = why => { s.strikes++; s.fx = { k: 'strike', why }; };
-      if (d.a === 'cut' && !s.wiresDone) {
+      const ok = m => { s.done[m] = true; s.fx = { k: 'ok', m }; };
+      if (d.a === 'cut' && !s.done.w) {
         const i = +d.i; if (!(i >= 0 && i < s.wires.length) || s.cut[i]) return; s.cut[i] = true;
-        if (i === s.wAns) { s.wiresDone = true; s.fx = { k: 'ok', m: 'wires' }; } else strike('شريط غلط');
-      } else if (d.a === 'press' && !s.btnDone) {
-        if (!needHold(s.btn.color, s.btn.word)) { s.btnDone = true; s.fx = { k: 'ok', m: 'btn' }; } else strike('كان لازم مطوّلة');
-      } else if (d.a === 'hold' && !s.btnDone) {
+        if (i === s.wAns) ok('w'); else strike('شريط غلط');
+      } else if (d.a === 'press' && !s.done.btn) {
+        if (!needHold(s.btn.color, s.btn.word)) ok('btn'); else strike('كان لازم مطوّلة');
+      } else if (d.a === 'hold' && !s.done.btn) {
         s.btn.holding = true; s.btn.strip = pick(['blue', 'yellow', 'red', 'white']);
-      } else if (d.a === 'release' && !s.btnDone && s.btn.holding) {
+      } else if (d.a === 'release' && !s.done.btn && s.btn.holding) {
         s.btn.holding = false;
         if (!needHold(s.btn.color, s.btn.word)) strike('كانت كبسة وحدة');
         else {
-          const left = Math.max(0, Math.ceil((c.endsAt() - now()) / 1000));
-          const str = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0');
-          if (str.includes(RELEASE_DIGIT[s.btn.strip])) { s.btnDone = true; s.fx = { k: 'ok', m: 'btn' }; } else strike('فلّتت بوقت غلط');
+          // منعتمد عالمؤقت اللي شايفه اللاعب (مع سماح ثانيتين)
+          const left = Math.max(0, Math.ceil((c.endsAt() - now()) / 1000)); const seen = Math.round(+d.left);
+          const use = Number.isFinite(seen) && Math.abs(seen - left) <= 2 ? seen : left;
+          const str = Math.floor(use / 60) + ':' + String(use % 60).padStart(2, '0');
+          if (str.includes(RELEASE_DIGIT[s.btn.strip])) ok('btn'); else strike('فلّتت بوقت غلط');
         }
         s.btn.strip = null;
-      } else if (d.a === 'sym' && !s.symDone) {
+      } else if (d.a === 'sym' && !s.done.sym) {
         const k = +d.k; const sym = s.shown[k]; if (sym === undefined || s.symPressed.includes(k)) return;
-        if (sym === s.order[s.symPos]) { s.symPressed.push(k); s.symPos++; if (s.symPos === 4) { s.symDone = true; s.fx = { k: 'ok', m: 'sym' }; } }
+        if (sym === s.order[s.symPos]) { s.symPressed.push(k); s.symPos++; if (s.symPos === 4) ok('sym'); }
         else { s.symPressed = []; s.symPos = 0; strike('رمز غلط'); }
+      } else if (d.a === 'num' && s.mods.includes('num') && !s.done.num) {
+        const pos = +d.k; const rule = NUM_RULE[s.num.display];
+        const right = rule.by === 'pos' ? pos === rule.v : s.num.labels[pos] === rule.v;
+        if (right) { s.num.stage++; if (s.num.stage >= 3) ok('num'); else { this.newNumStage(s); s.fx = { k: 'step' }; } }
+        else { s.num.stage = 0; this.newNumStage(s); strike('زر غلط باللوحة'); }
+      } else if (d.a === 'lit' && s.mods.includes('lit') && !s.done.lit) {
+        if (d.w === s.lit.ans) ok('lit'); else strike('كلمة غلط');
       } else return;
       s.seq++; s.dirty = true;
       if (s.strikes >= 3) return { res: 'lose', why: '3 غلطات… القنبلة فقعت 💥' };
-      if (s.wiresDone && s.btnDone && s.symDone) return { res: 'win' };
+      if (s.mods.every(m => s.done[m])) return { res: 'win' };
     },
     view(c, s, pid) {
-      const base = { def: s.def, strikes: s.strikes, fx: s.fx, seq: s.seq, done: { w: s.wiresDone, b: s.btnDone, s: s.symDone } };
-      if (pid === s.def) return { ...base, role: 'def', wires: s.wires, cut: s.cut, btn: { color: s.btn.color, word: s.btn.word, holding: s.btn.holding, strip: s.btn.strip }, shown: s.shown, symPressed: s.symPressed };
-      return { ...base, role: 'reader', pages: s.assign[pid] || [], cols: s.cols };
+      const base = { def: s.def, mods: s.mods, strikes: s.strikes, fx: s.fx, seq: s.seq, done: s.done };
+      if (pid === s.def) return { ...base, role: 'def', wires: s.wires, cut: s.cut, btn: { color: s.btn.color, word: s.btn.word, holding: s.btn.holding, strip: s.btn.strip }, shown: s.shown, symPressed: s.symPressed, num: { stage: s.num.stage, display: s.num.display, labels: s.num.labels }, lit: { seq: s.lit.seq, words: s.lit.words } };
+      return { ...base, role: 'reader', pages: s.assign[pid] || [], cols: s.cols, table: LIGHT_TABLE };
     },
-    drop(c, s, pid) {
-      if (pid === s.def) return 'restart';
-      const pages = ['w3', 'w4', 'w5', 'btn', 'symA', 'symB']; const readers = c.act.filter(p => p !== s.def); s.assign = {};
-      readers.forEach(p => s.assign[p] = []); pages.forEach((pg, i) => s.assign[readers[i % readers.length]].push(pg)); s.seq++; s.dirty = true;
-    },
+    drop(c, s, pid) { if (pid === s.def) return 'restart'; this.assignPages(s, c.act.filter(p => p !== s.def)); s.seq++; s.dirty = true; },
     why: 'الوقت خلص… القنبلة فقعت 💥'
   },
   pulse: {
-    name: 'النبض', min: 2, dur: { easy: 15, hard: 20 }, noTimer: true,
-    init(c) { const S = c.diff === 'hard' ? 16 : 8; return { beat: 600, start: now() + 1200, L: 8, S, taps: {}, res: null }; },
+    name: 'النبض', min: 2, dur: { easy: 15, mid: 18 }, noTimer: true,
+    init(c) { const S = c.diff === 'easy' ? 8 : 12; return { beat: 600, start: now() + 1200, L: 8, S, pass: { easy: 0.7, mid: 0.8, hard: 0.9 }[c.diff], taps: {}, res: null }; },
     tick(c, s) {
       if (s.res) return;
       if (now() > s.start + (s.L + s.S) * s.beat + 800) {
@@ -300,76 +314,142 @@ const GAMES = {
           }
           per[p] = hits / s.S; sum += per[p];
         });
-        const avg = sum / c.n; s.res = { per, avg }; s.dirty = true;
-        return avg >= 0.6 ? { res: 'win' } : { res: 'lose', why: 'الإيقاع فلت منكن (' + Math.round(avg * 100) + '%)' };
+        const avg = sum / c.n; s.res = { per, avg, pass: s.pass }; s.dirty = true;
+        return avg >= s.pass ? { res: 'win' } : { res: 'lose', why: 'الإيقاع فلت منكن (' + Math.round(avg * 100) + '% من ' + Math.round(s.pass * 100) + '%)' };
       }
     },
     input(c, s, pid, d) { if (d.a !== 'tap' || s.res) return; s.taps[pid] = s.taps[pid] || []; if (s.taps[pid].length < 80) s.taps[pid].push(+d.at || now()); },
-    view(c, s) { return { beat: s.beat, start: s.start, L: s.L, S: s.S, res: s.res }; },
+    view(c, s) { return { beat: s.beat, start: s.start, L: s.L, S: s.S, pass: s.pass, res: s.res }; },
     drop(c, s, pid) { delete s.taps[pid]; }
   },
   drum: {
-    name: 'الطبلة', min: 2, dur: { easy: 70, hard: 40 },
+    name: 'الطبلة', min: 2, dur: { easy: 80, mid: 55 },
     init(c) {
-      const K = Math.min(c.n, 6); const ord = shuffle([...c.act]); const assign = {};
-      ord.forEach((p, i) => assign[p] = i % K);
-      const L = Math.min(4 + K, 10); const pat = [];
-      for (let i = 0; i < K; i++) pat.push(i);
-      while (pat.length < L) pat.push(Math.floor(Math.random() * K));
-      shuffle(pat);
-      return { K, assign, pattern: pat, idx: 0, demoAt: now() + 700, step: 550, fx: null, seq: 0 };
+      // كل لاعب إلو أداة لحاله (لحد 12) — ما في أداتين متل بعض
+      const K = c.n; const ord = shuffle([...c.act]); const assign = {}; const sounds = shuffle([...Array(12).keys()]).slice(0, K);
+      ord.forEach((p, i) => assign[p] = sounds[i]);
+      const L = Math.min(16, K + (c.diff === 'hard' ? 4 : 2)); const pat = [...sounds];
+      while (pat.length < L) pat.push(pick(sounds));
+      return { sounds, assign, pattern: noRepeatOrder(pat), idx: 0, demoAt: now() + 900, step: 600, hideNums: c.diff === 'hard', fx: null, seq: 0 };
     },
     input(c, s, pid, d) {
       const t = now();
-      if (d.a === 'replay' && pid === c.room.hostId) { s.demoAt = t + 400; s.idx = 0; s.fx = { k: 'replay' }; s.seq++; s.dirty = true; return; }
+      if (d.a === 'replay' && pid === c.room.hostId) { s.demoAt = t + 500; s.idx = 0; s.fx = { k: 'replay' }; s.seq++; s.dirty = true; return; }
       if (d.a !== 'hit' || s.assign[pid] === undefined) return;
       if (t < s.demoAt + s.pattern.length * s.step) return;
       const snd = s.assign[pid];
       if (snd === s.pattern[s.idx]) { s.idx++; s.fx = { k: 'ok', snd, who: pid }; }
-      else { s.idx = 0; s.fx = { k: 'bad', snd, who: pid }; s.demoAt = t + 1200; }
+      else { s.fx = { k: 'bad', snd, who: pid, want: s.pattern[s.idx] }; s.idx = 0; s.demoAt = t + 1500; }
       s.seq++; s.dirty = true;
       if (s.idx >= s.pattern.length) return { res: 'win' };
     },
-    view(c, s, pid) { return { K: s.K, pattern: s.pattern, idx: s.idx, demoAt: s.demoAt, step: s.step, mine: s.assign[pid], fx: s.fx, seq: s.seq }; },
+    view(c, s, pid) { return { sounds: s.sounds, pattern: s.pattern, idx: s.idx, demoAt: s.demoAt, step: s.step, hideNums: s.hideNums, mine: s.assign[pid], fx: s.fx, seq: s.seq }; },
     drop() { return 'restart'; },
     why: 'الإيقاع ما كمل'
   },
   puzzle: {
-    name: 'البازل المقسوم', min: 2, dur: { easy: 150, hard: 80 },
+    name: 'البازل المقسوم', min: 2, dur: { easy: 240, mid: 170, hard: 260 },
     init(c) {
-      const N = 25; const ord = shuffle([...c.act]); const ids = shuffle([...Array(N).keys()]); const owners = Array(N);
+      const side = c.diff === 'hard' ? 7 : 5; const N = side * side; const ord = shuffle([...c.act]); const ids = shuffle([...Array(N).keys()]); const owners = Array(N);
       ids.forEach((id, i) => owners[id] = ord[i % ord.length]);
-      return { seed: Math.floor(Math.random() * 1e6), owners, slots: Array(N).fill(-1), fx: null, seq: 0 };
+      return { side, N, seed: Math.floor(Math.random() * 1e9), owners, slots: Array(N).fill(-1), cls: null, fx: null, seq: 0 };
     },
+    solved(s) { return s.slots.every((p, i) => p === i || (p >= 0 && s.cls && s.cls[p] === s.cls[i])); },
     input(c, s, pid, d) {
+      // الريس بيبعت أي قطع شكلهن متل بعض بالضبط (متل قطع السما) — بتنحسب صح بأي واحد منهن
+      if (d.a === 'eq') { if (pid === c.room.hostId && Array.isArray(d.cls) && d.cls.length === s.N) { s.cls = d.cls.map(x => +x); if (this.solved(s)) return { res: 'win' }; } return; }
       if (d.a !== 'move') return; const p = +d.p, slot = +d.slot;
-      if (!(p >= 0 && p < 25) || s.owners[p] !== pid || !(slot >= -1 && slot < 25)) return;
+      if (!(p >= 0 && p < s.N) || s.owners[p] !== pid || !(slot >= -1 && slot < s.N)) return;
+      if (slot >= 0 && s.slots[slot] >= 0 && s.slots[slot] !== p) { s.fx = { k: 'taken', who: pid, slot }; s.seq++; s.dirty = true; return; } // محجوزة لصاحبها
       const cur = s.slots.indexOf(p); if (cur >= 0) s.slots[cur] = -1;
       if (slot >= 0) s.slots[slot] = p;
       s.fx = { k: 'move', who: pid }; s.seq++; s.dirty = true;
-      if (s.slots.every((v, i) => v === i)) return { res: 'win' };
+      if (this.solved(s)) return { res: 'win' };
     },
-    view(c, s) { return { seed: s.seed, owners: s.owners, slots: s.slots, fx: s.fx, seq: s.seq }; },
+    view(c, s) { return { side: s.side, seed: s.seed, owners: s.owners, slots: s.slots, fx: s.fx, seq: s.seq }; },
     drop(c, s, pid) { s.owners = s.owners.map(o => o === pid ? pick(c.act) : o); s.seq++; s.dirty = true; },
     why: 'الصورة ما اكتملت'
   },
-  twister: {
-    name: 'تويستر الأصابع', min: 2, cap: 6, dur: { easy: 30, hard: 50 }, survival: true,
+  power: {
+    name: 'رجّعوا الكهربا', min: 2, dur: { easy: 120, mid: 85 },
     init(c) {
-      const host = c.room.players.get(c.room.hostId);
-      const table = host && host.online ? c.room.hostId : c.act[0];
-      return { table, act: c.act, seed: Math.floor(Math.random() * 1e6) };
+      const G = c.diff === 'hard' ? 6 : 4; const N = G * G; const sol = Array(N).fill(0);
+      const src = Math.floor(G / 2) * G + Math.floor(G / 2) - (G % 2 ? 0 : 0);
+      // شجرة عشوائية بتغطّي كل الخانات
+      const seen = new Set([src]); const stack = [src];
+      const nb = i => { const r = Math.floor(i / G), q = i % G; return [[r - 1, q, 1, 4], [r, q + 1, 2, 8], [r + 1, q, 4, 1], [r, q - 1, 8, 2]].filter(([a, b]) => a >= 0 && a < G && b >= 0 && b < G).map(([a, b, m, back]) => [a * G + b, m, back]); };
+      while (stack.length) {
+        const cur = stack[stack.length - 1]; const opts = shuffle(nb(cur).filter(([j]) => !seen.has(j)));
+        if (!opts.length) { stack.pop(); continue; }
+        const [j, m, back] = opts[0]; sol[cur] |= m; sol[j] |= back; seen.add(j); stack.push(j);
+      }
+      const rot = sol.map(() => Math.floor(Math.random() * 4));
+      // نتأكد إنو مو محلولة من الأول
+      const ord = shuffle([...c.act]); const owners = shuffle([...Array(N).keys()]).reduce((o, cell, i) => (o[cell] = ord[i % ord.length], o), Array(N));
+      const s = { G, N, src, sol, rot, owners, fx: null, seq: 0 };
+      if (this.lit(s).every(Boolean)) s.rot[0] = (s.rot[0] + 1) % 4;
+      return s;
     },
-    input(c, s, pid, d) { if (pid === s.table && d.a === 'fail') return { res: 'lose', why: (c.name(d.who) || 'حدا') + ' فلت إصبعه' }; },
-    view(c, s) { return { table: s.table, act: s.act, seed: s.seed }; },
-    drop(c, s, pid) { if (pid === s.table) return 'restart'; s.act = s.act.filter(x => x !== pid); s.dirty = true; }
+    mask(s, i) { let m = s.sol[i]; for (let k = 0; k < s.rot[i]; k++) m = rotMask(m); return m; },
+    lit(s) {
+      const G = s.G, on = Array(s.N).fill(false); on[s.src] = true; const q = [s.src];
+      while (q.length) {
+        const i = q.shift(); const m = this.mask(s, i); const r = Math.floor(i / G), col = i % G;
+        [[1, r - 1, col, 4], [2, r, col + 1, 8], [4, r + 1, col, 1], [8, r, col - 1, 2]].forEach(([bit, a, b, back]) => {
+          if (!(m & bit) || a < 0 || a >= G || b < 0 || b >= G) return; const j = a * G + b;
+          if (!on[j] && (this.mask(s, j) & back)) { on[j] = true; q.push(j); }
+        });
+      }
+      return on;
+    },
+    input(c, s, pid, d) {
+      if (d.a !== 'rot') return; const i = +d.i; if (!(i >= 0 && i < s.N) || s.owners[i] !== pid) return;
+      s.rot[i] = (s.rot[i] + 1) % 4; s.fx = { k: 'rot', i, who: pid }; s.seq++; s.dirty = true;
+      if (this.lit(s).every(Boolean)) return { res: 'win' };
+    },
+    view(c, s) { const v = { G: s.G, src: s.src, masks: s.sol.map((_, i) => this.mask(s, i)), owners: s.owners, lit: this.lit(s), fx: s.fx, seq: s.seq }; if (TESTHOOK) v._sol = s.sol; return v; },
+    drop(c, s, pid) { s.owners = s.owners.map(o => o === pid ? pick(c.act) : o); s.seq++; s.dirty = true; },
+    why: 'في بيوت ضلّت بلا كهربا'
+  },
+  atc: {
+    name: 'برج المراقبة', min: 2, dur: { easy: 75, mid: 55 }, rate: 0,
+    init(c) {
+      const hard = c.diff === 'hard'; const t = now();
+      const s = { hard, quota: hard ? 3 : 2, planes: {}, left: {}, busyUntil: 0, landed: 0, target: 0, gap: hard ? 1.8 : 1.3, win: hard ? 1.4 : 2.2, fuel: hard ? 2 : 99, fx: null, seq: 0 };
+      c.act.forEach((p, i) => { s.left[p] = s.quota; this.spawn(s, p, t + 800 + i * rnd(400, 1100)); });
+      s.target = c.n * s.quota;
+      return s;
+    },
+    spawn(s, pid, at) { const A = (s.hard ? rnd(3.2, 4.6) : rnd(4.5, 6.5)) * 1000; s.planes[pid] = { t0: at || now() + rnd(800, 2200), A, W: s.win * 1000, miss: (s.planes[pid] && s.planes[pid].miss) || 0, id: Math.random().toString(36).slice(2, 7) }; },
+    tick(c, s) {
+      const t = now();
+      for (const pid of Object.keys(s.planes)) {
+        const pl = s.planes[pid]; if (!pl) continue;
+        if (t > pl.t0 + pl.A + pl.W) { // فات الشباك بلا نزول — بيلف لفّة
+          pl.miss++; s.fx = { k: 'around', who: pid };
+          if (pl.miss > s.fuel) return { res: 'lose', why: 'طيارة ' + (c.name(pid) || 'حدا') + ' خلص بنزينها ✈️' };
+          this.spawn(s, pid); s.planes[pid].miss = pl.miss; s.seq++; s.dirty = true;
+        }
+      }
+    },
+    input(c, s, pid, d) {
+      if (d.a !== 'land') return; const pl = s.planes[pid]; if (!pl) return; const t = now();
+      if (t < pl.t0 + pl.A) { s.fx = { k: 'early', who: pid }; this.spawn(s, pid); s.planes[pid].miss = pl.miss; s.seq++; s.dirty = true; return; }
+      if (t < s.busyUntil) return { res: 'lose', why: 'اصطدام عالمدرج 💥 ' + (c.name(pid) || '') + ' نزل والمدرج مشغول' };
+      s.busyUntil = t + s.gap * 1000; s.landed++; s.left[pid]--; s.fx = { k: 'land', who: pid };
+      if (s.left[pid] > 0) { this.spawn(s, pid); s.planes[pid].miss = 0; } else delete s.planes[pid];
+      s.seq++; s.dirty = true;
+      if (s.landed >= s.target) return { res: 'win' };
+    },
+    view(c, s) { return { planes: s.planes, busyUntil: s.busyUntil, gap: s.gap, landed: s.landed, target: s.target, left: s.left, fuel: s.fuel === 99 ? null : s.fuel, fx: s.fx, seq: s.seq, order: c.act }; },
+    drop(c, s, pid) { s.target -= Math.max(0, s.left[pid] || 0); delete s.planes[pid]; delete s.left[pid]; s.seq++; s.dirty = true; },
+    why: 'الطيارات ما نزلت كلها بالوقت'
   },
   fire: {
-    name: 'الإطفائية', min: 2, dur: { easy: 35, hard: 55 }, survival: true, rate: 100,
+    name: 'الإطفائية', min: 2, dur: { easy: 30, mid: 45 }, survival: true, rate: 100,
     init(c) {
-      // كل لاعب إلو بناية، والنار بتولّع بكل البنايات سوا من أول ثانية
-      const t = now(); const bld = c.act.map((pid, i) => ({ id: i, pid }));
-      const max = 45 + 9 * c.n; const s = { bld, fires: [], id: 1, tank: max, max, next: t + 1500, iv: 3.4 / c.n, faucet: null, nextTap: t + 6000, t: 0 };
+      const t = now(); const hard = c.diff === 'hard'; const bld = c.act.map((pid, i) => ({ id: i, pid }));
+      const max = 45 + 9 * c.n; const s = { bld, fires: [], id: 1, tank: max, max, next: t + 1500, iv: (hard ? 2.6 : 3.4) / c.n, grow: hard ? 10 : 8, faucet: null, nextTap: t + 6000, t: 0 };
       bld.forEach(b => this.spawn(s, b.id));
       return s;
     },
@@ -382,7 +462,7 @@ const GAMES = {
     tick(c, s, dt) {
       const t = now(); s.t += dt;
       for (const f of s.fires) {
-        f.size += 8 * (1 + s.t / 45) * dt;
+        f.size += s.grow * (1 + s.t / 45) * dt;
         if (f.size >= 72 && !f.spread) { f.spread = true; this.spawn(s, f.b, f.w); }
       }
       const burnt = s.fires.find(f => f.size >= 100);
@@ -411,7 +491,8 @@ const GAMES = {
   }
 };
 const KEYS = Object.keys(GAMES);
-if (FAST) for (const k of KEYS) { GAMES[k].dur = { easy: k === 'pulse' ? 15 : 8, hard: k === 'pulse' ? 20 : 6 }; }
+const durOf = (g, diff) => (g.dur[diff] || g.dur.mid);
+if (FAST) for (const k of KEYS) { GAMES[k].dur = k === 'pulse' ? GAMES[k].dur : { easy: 10, mid: 8 }; }
 
 // ---------------- الغرف ----------------
 const rooms = new Map();
@@ -423,7 +504,7 @@ function publicRoom(r) {
   return {
     code: r.code, hostId: r.hostId, name: r.name, type: r.type, diff: r.diff, phase: r.phase, hearts: r.hearts,
     done: r.done, remaining: r.remaining.length, total: KEYS.length, keys: KEYS, names: Object.fromEntries(KEYS.map(k => [k, GAMES[k].name])),
-    wheel: r.wheel, intro: r.intro ? { key: r.intro.key, diff: r.intro.diff, active: [...r.intro.active], ready: [...r.intro.ready], cap: GAMES[r.intro.key].cap || null, dur: GAMES[r.intro.key].dur, retry: !!r.intro.retry } : null,
+    wheel: r.wheel, intro: r.intro ? { key: r.intro.key, diff: r.intro.diff, active: [...r.intro.active], ready: [...r.intro.ready], dur: Object.fromEntries(LEVELS.map(l => [l, durOf(GAMES[r.intro.key], l)])), retry: !!r.intro.retry } : null,
     canRetry: !!(r.done.length && !r.done[r.done.length - 1].skip && ['after', 'final', 'wheel'].includes(r.phase)),
     cur: r.cur ? { key: r.cur.key, startAt: r.cur.startAt, endsAt: r.cur.endsAt, diff: r.cur.diff, act: r.cur.act, noTimer: !!GAMES[r.cur.key].noTimer } : null,
     after: r.after, hostGone: !!(r.hostGoneAt && now() - r.hostGoneAt > 15000),
@@ -455,13 +536,8 @@ function pushGame(r) {
   if (cur.timeDirty) { cur.timeDirty = false; pushRoom(r); }
 }
 
-function pickActive(r, key) {
-  const on = onlinePlayers(r).map(p => p.id); const cap = GAMES[key].cap;
-  if (!cap || on.length <= cap) return new Set(on);
-  // الأقل لعباً بالمهمات المحدودة أولاً
-  const sorted = shuffle([...on]).sort((a, b) => (r.players.get(a).capPlayed || 0) - (r.players.get(b).capPlayed || 0));
-  return new Set(sorted.slice(0, cap));
-}
+// الكل لازم يلعب — ما في مراقبين
+function pickActive(r) { return new Set(onlinePlayers(r).map(p => p.id)); }
 
 function startWheel(r) {
   if (!r.remaining.length || r.hearts <= 0) return toFinal(r);
@@ -473,7 +549,7 @@ function startWheel(r) {
 }
 function toIntro(r, key) {
   clearTimeout(r.timer);
-  r.phase = 'intro'; r.intro = { key, diff: r.diff, active: pickActive(r, key), ready: new Set() };
+  r.phase = 'intro'; r.intro = { key, diff: r.diff || 'easy', active: pickActive(r), ready: new Set() };
   pushRoom(r);
 }
 function checkIntroReady(r) {
@@ -487,9 +563,8 @@ function startMission(r) {
   const act = [...r.intro.active].filter(id => { const p = r.players.get(id); return p && p.online; });
   if (act.length < g.min) return send(r.players.get(r.hostId)?.ws, { t: 'err', m: 'بدها ' + g.min + ' لاعبين عالأقل' });
   const diff = r.intro.diff;
-  if (g.cap) act.forEach(id => { const p = r.players.get(id); p.capPlayed = (p.capPlayed || 0) + 1; });
   const startAt = now() + 3500;
-  r.cur = { key, act, diff, startAt, endsAt: startAt + g.dur[diff] * 1000, st: null, lastPush: 0 };
+  r.cur = { key, act, diff, startAt, endsAt: startAt + durOf(g, diff) * 1000, st: null, lastPush: 0 };
   r.phase = 'count'; r.intro = null;
   stats.games[key] = stats.games[key] || { played: 0, won: 0 }; stats.games[key].played++;
   pushRoom(r);
@@ -578,6 +653,8 @@ setInterval(() => {
       const rate = g.rate || 0;
       if (r.cur.st.dirty && (!rate || t - r.cur.lastPush >= rate)) pushGame(r);
     }
+    // لاعب فصل نص المهمة: بعد 15 ثانية بتنوزّع حصته عالباقيين
+    if (r.phase === 'play' && r.cur && r.cur.st) for (const pid of [...r.cur.act]) { const q = r.players.get(pid); if (q && !q.online && t - (q.offAt || t) > 15000) { dropFromMission(r, pid); pushRoom(r); } }
     // الريس غايب
     if (r.hostGoneAt && !r.hostGoneSent && t - r.hostGoneAt > 15000) { r.hostGoneSent = true; pushRoom(r); }
     // تنظيف الغرف الفاضية
@@ -591,7 +668,7 @@ function cleanPhoto(s, max = 120000) { s = String(s || ''); return s.startsWith(
 
 function attach(ws, r, p) {
   if (p.ws && p.ws !== ws) { try { send(p.ws, { t: 'replaced' }); p.ws.close(); } catch (e) {} }
-  p.ws = ws; p.online = true; ws.room = r; ws.pid = p.id; r.emptyAt = null;
+  p.ws = ws; p.online = true; p.offAt = 0; ws.room = r; ws.pid = p.id; r.emptyAt = null;
   if (r.hostId === p.id) { r.hostGoneAt = null; r.hostGoneSent = false; }
   send(ws, { t: 'you', pid: p.id, code: r.code });
   // كل الصور
@@ -612,7 +689,7 @@ wss.on('connection', ws => {
       const code = newCode(); const p = { id: uid(), name: cleanName(m.name) || 'الريس', g: m.g === 'f' ? 'f' : 'm', photo: cleanPhoto(m.photo), color: COLORS[0], online: true };
       const r = {
         code, hostId: p.id, name: cleanName(m.room && m.room.name) || 'قعدتنا', type: String((m.room && m.room.type) || 'شلة').slice(0, 20),
-        diff: m.room && m.room.diff === 'hard' ? 'hard' : 'easy', players: new Map([[p.id, p]]), order: [p.id], phase: 'lobby', hearts: 3,
+        diff: 'easy', players: new Map([[p.id, p]]), order: [p.id], phase: 'lobby', hearts: 3,
         remaining: [...KEYS], done: [], created: now(), wheel: null, intro: null, cur: null, after: null
       };
       rooms.set(code, r); stats.sessions++; stats.joins++; bump('sessions'); bump('joins');
@@ -627,7 +704,7 @@ wss.on('connection', ws => {
       const p = { id: uid(), name: cleanName(m.name) || 'لاعب', g: m.g === 'f' ? 'f' : 'm', photo: cleanPhoto(m.photo), color: nextColor(r), online: true };
       r.players.set(p.id, p); r.order.push(p.id); stats.joins++; bump('joins');
       if (p.photo) broadcast(r, { t: 'photo', pid: p.id, data: p.photo });
-      if (r.phase === 'intro' && !GAMES[r.intro.key].cap) r.intro.active.add(p.id);
+      if (r.phase === 'intro') r.intro.active.add(p.id);
       return attach(ws, r, p);
     }
     if (t === 'rejoin') {
@@ -646,14 +723,7 @@ wss.on('connection', ws => {
         if (m.photo !== undefined) { p.photo = cleanPhoto(m.photo); broadcast(r, { t: 'photo', pid: p.id, data: p.photo }); }
         return pushRoom(r);
       case 'start': if (isHost && r.phase === 'lobby') { if (onlinePlayers(r).length < 2) return send(ws, { t: 'err', m: 'بدها لاعبين اتنين عالأقل' }); startWheel(r); } return;
-      case 'diff': if (isHost && r.phase === 'intro') { r.intro.diff = m.v === 'hard' ? 'hard' : 'easy'; r.diff = r.intro.diff; r.intro.ready.clear(); pushRoom(r); } return;
-      case 'toggle':
-        if (isHost && r.phase === 'intro' && r.players.has(m.pid)) {
-          const a = r.intro.active; const cap = GAMES[r.intro.key].cap;
-          if (a.has(m.pid)) a.delete(m.pid); else { if (cap && a.size >= cap) return send(ws, { t: 'err', m: 'هالمهمة بتاخد ' + cap + ' بس — طلّع حدا أول' }); a.add(m.pid); }
-          r.intro.ready.delete(m.pid); pushRoom(r); checkIntroReady(r);
-        } return;
-      case 'shuffleActive': if (isHost && r.phase === 'intro') { r.intro.active = new Set(shuffle(onlinePlayers(r).map(x => x.id)).slice(0, GAMES[r.intro.key].cap || 12)); r.intro.ready.clear(); pushRoom(r); } return;
+      case 'diff': if (isHost && r.phase === 'intro') { r.intro.diff = LEVELS.includes(m.v) ? m.v : 'easy'; r.diff = r.intro.diff; r.intro.ready.clear(); pushRoom(r); } return;
       case 'ready': if (r.phase === 'intro' && r.intro.active.has(p.id)) { r.intro.ready.add(p.id); pushRoom(r); checkIntroReady(r); } return;
       case 'go': if (isHost && r.phase === 'intro') startMission(r); return;
       case 'next': if (isHost && r.phase === 'after' && !r.after.last) { clearTimeout(r.timer); startWheel(r); } return;
@@ -689,7 +759,7 @@ wss.on('connection', ws => {
   ws.on('close', () => {
     const r = ws.room; if (!r) return; const p = r.players.get(ws.pid);
     if (p && p.ws === ws) {
-      p.online = false; p.ws = null;
+      p.online = false; p.ws = null; p.offAt = now();
       if (r.hostId === p.id) { r.hostGoneAt = now(); r.hostGoneSent = false; }
       if (!onlinePlayers(r).length) r.emptyAt = now();
       pushRoom(r); checkIntroReady(r);

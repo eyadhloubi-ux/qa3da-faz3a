@@ -40,7 +40,7 @@ function onMsg(m) {
     case 'gphoto': FZ.gphoto = m.data || null; if (S.room && S.room.phase === 'final') render(); break;
     case 'g': onGame(m); break;
     case 'fx':
-      if (m.k === 'skip') FZ.toast('⏭ مرّرنا «' + (S.room ? S.room.names[m.key] : '') + '» — بلا ما يروح قلب');
+      if (m.k === 'skip') FZ.toast('↷ مرّرنا «' + (S.room ? S.room.names[m.key] : '') + '» — بلا ما يروح قلب');
       if (m.k === 'retry') { FZ.toast('🔁 منعيد «' + (S.room ? S.room.names[m.key] : '') + '» — النتيجة القديمة انلغت'); S.finalFx = false; }
       break;
     case 'err':
@@ -59,6 +59,8 @@ function setTick(t) { const el = $('#tickTxt'); if (el.dataset.t !== t) { el.dat
 function fmt(ms) { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 const TAUNTS = ['يلا شوفونا', 'مش بطالين لهلق', 'شوي شوي…', 'ركّزوا شوي', 'قرّبتوا؟', 'الوقت ماشي ⏳', 'هالمرة؟ منشوف', 'مرة تانية؟'];
 const mUrl = c => location.origin + '/?c=' + c;
+const LV = [['easy', '😌 سهل'], ['mid', '🙂 متوسط'], ['hard', '🔥 صعب']];
+const LVN = Object.fromEntries(LV);
 const doneMap = r => Object.fromEntries(r.done.map(d => [d.key, d.skip ? 'sk' : d.ok ? 'ok' : 'no']));
 function score(r) { const wins = r.done.filter(d => d.ok).length, skipped = r.done.filter(d => d.skip).length; return { wins, skipped, total: 12 - skipped }; }
 
@@ -222,10 +224,11 @@ function playersPanel() {
     ${r.phase === 'lobby' ? `<button class="btn sm alt" id="ppInv">📤 ابعت رابط القعدة</button>` : ''}`, b => {
     $$('button[data-a]', b).forEach(bt => bt.onclick = () => {
       const p = r.players.find(x => x.id === bt.dataset.id);
+      S.panel = false;
       if (bt.dataset.a === 'me') return editMe();
       if (bt.dataset.a === 'ren') return modal(`<h2 class="t" style="margin:16px 0 4px">الاسم الجديد</h2><input class="in" id="nn" maxlength="18" value="${esc(p.name)}"><button class="btn main" id="ns">حفظ</button>`, b2 => { $('#ns', b2).onclick = () => { FZ.send({ t: 'rename', pid: p.id, name: $('#nn', b2).value }); playersPanel(); }; });
-      if (bt.dataset.a === 'crown') return confirmBox(`تسلّم الريس لـ${esc(p.name)}؟`, 'إي', () => FZ.send({ t: 'handover', pid: p.id }));
-      if (bt.dataset.a === 'kick') return confirmBox(`تطلّع ${esc(p.name)} من القعدة؟`, 'إي، طلّع', () => { FZ.send({ t: 'kick', pid: p.id }); setTimeout(playersPanel, 250); });
+      if (bt.dataset.a === 'crown') return confirmBox(`تسلّم الريس لـ${esc(p.name)}؟`, 'إي', () => { FZ.send({ t: 'handover', pid: p.id }); setTimeout(playersPanel, 300); });
+      if (bt.dataset.a === 'kick') return confirmBox(`تطلّع ${esc(p.name)} من القعدة؟<div class="sub" style="margin-top:6px">${r.cur ? 'حصته بالمهمة بتتوزّع عالباقيين' : 'بيطلع وما بيقدر يرجع لنفس القعدة'}</div>`, '🚪 إي، طلّع', () => { FZ.send({ t: 'kick', pid: p.id }); FZ.toast('طلّعنا ' + p.name); setTimeout(playersPanel, 300); });
     });
     if ($('#ppInv', b)) $('#ppInv', b).onclick = shareLink;
   });
@@ -322,20 +325,21 @@ function scIntro() {
     <div class="mhead"><div class="mtile">${gm.icon}</div><div><div class="mt">${r.names[it.key]}</div><div class="ms">${gm.short}</div></div></div>
     <div class="screenbox"><ul class="rulelist">${gm.rules.map((x, i) => `<li><i>${i + 1}</i><span>${x}</span></li>`).join('')}</ul></div>
     <div class="lbl">الصعوبة ${host ? '' : '· الريس بيختار'}</div>
-    <div class="seg" id="idf"><button class="${it.diff === 'easy' ? 'on' : ''}" data-v="easy">😌 سهل<small>${surv ? 'صمود ' : ''}${d.easy} ثانية</small></button><button class="${it.diff === 'hard' ? 'on h' : ''}" data-v="hard">🔥 صعب<small>${surv ? 'صمود ' : ''}${d.hard} ثانية</small></button></div>
-    <div class="row" style="align-items:center"><div class="lbl">مين بيلعب${it.cap ? ` · ${it.cap} بالأكتر` : ''}</div>${host ? '<div class="sub" style="text-align:left">اكبس على حدا ليلعب أو يتفرّج</div>' : ''}</div>
+    <div class="seg" id="idf">${LV.map(([k, n]) => `<button class="${it.diff === k ? 'on' + (k === 'hard' ? ' h' : '') : ''}" data-v="${k}">${n}<small>${gm.noTimerUI ? '' : (surv ? 'صمود ' : '') + d[k] + ' ث'}${k === 'hard' ? ' + أصعب' : ''}</small></button>`).join('')}</div>
+    <div class="sub">${it.diff === 'hard' ? '🔥 ' + gm.hard : it.diff === 'mid' ? '🙂 نفس المهمة بوقت أقصر' : '😌 وقت مريح'}</div>
+    ${it.key === 'bomb' && act.size < (it.diff === 'hard' ? 6 : 4) ? `<div class="screenbox" style="font-size:13.5px">⚠️ عددكن ${act.size}: الدليل ${it.diff === 'hard' ? '5' : '3'} صفحات، فـ${act.size > 2 ? 'في حدا معه أكتر من صفحة' : 'اللي معه الدليل رح يكون معه كل الصفحات'}.</div>` : ''}
+    <div class="lbl">الفريق · الكل بيلعب</div>
     <div class="plist">${r.players.filter(p => p.online).map(p => playerTile(p, (act.has(p.id) ? '' : 'bench') + (rdy.has(p.id) ? ' rdy' : ''))).join('')}</div>
     <div style="margin-top:auto"></div>
     ${amActive ? `<button class="btn ${amReady ? '' : 'alt'}" id="ir" ${amReady ? 'disabled' : ''}>${amReady ? '✓ جاهز — استنّى الباقيين' : '✋ ' + G2(meP(), 'جاهز', 'جاهزة')}</button>` : `<div class="screenbox" style="text-align:center">👀 إنت مراقب${G2(meP(), '', 'ة')} بهالمهمة</div>`}
     ${host ? `<button class="btn main" id="igo">▶ ابدأ هلق</button>
-      <div class="hostbar"><button class="btn sm" id="isk">⏭ مرّر هالمهمة</button>${it.cap ? '<button class="btn sm" id="ish">🎲 قرعة مين بيلعب</button>' : ''}</div>` : ''}
+      <div class="hostbar"><button class="btn sm" id="isk">↷ مرّر هالمهمة</button></div>` : ''}
     <div class="sub">بتبلّش لحالها لما الكل يكون جاهز (${[...rdy].filter(x => act.has(x)).length}/${act.size})</div></div>`;
   $$('#idf button').forEach(b => { if (host) b.onclick = () => FZ.send({ t: 'diff', v: b.dataset.v }); else b.style.pointerEvents = 'none'; });
-  if (host) bindTiles(app, p => FZ.send({ t: 'toggle', pid: p.id }));
-  if ($('#ish')) $('#ish').onclick = () => FZ.send({ t: 'shuffleActive' });
-  if ($('#isk')) $('#isk').onclick = () => confirmBox('تمرّر «' + r.names[it.key] + '»؟<div class="sub" style="margin-top:6px">بتطلع من الدولاب وما بتاخد قلب</div>', '⏭ مرّر', () => FZ.send({ t: 'skip' }));
-  if ($('#ir')) $('#ir').onclick = () => { FZ.audio(); if (it.key === 'balance') FZ.askMotion(); FZ.send({ t: 'ready' }); };
-  if ($('#igo')) $('#igo').onclick = () => { FZ.audio(); if (it.key === 'balance') FZ.askMotion(); FZ.send({ t: 'go' }); };
+  if (host) bindTiles(app, () => playersPanel());
+  if ($('#isk')) $('#isk').onclick = () => confirmBox('تمرّر «' + r.names[it.key] + '»؟<div class="sub" style="margin-top:6px">بتطلع من الدولاب وما بتاخد قلب</div>', '↷ مرّر', () => FZ.send({ t: 'skip' }));
+  if ($('#ir')) $('#ir').onclick = () => { FZ.audio(); FZ.send({ t: 'ready' }); };
+  if ($('#igo')) $('#igo').onclick = () => { FZ.audio(); FZ.send({ t: 'go' }); };
 }
 
 // ---------- العد ----------
@@ -344,7 +348,7 @@ function scCount() {
   const act = r.cur.act.includes(S.me);
   app.innerHTML = `<div class="screen" style="justify-content:center;align-items:center">
     <div class="mhead"><div class="mtile">${gm.icon}</div><div class="mt">${r.names[r.cur.key]}</div></div>
-    <div class="count" id="cc">3</div><div class="sub">${act ? 'ركّزوا!' : 'إنت مراقب بهالمهمة 👀'} · ${r.cur.diff === 'easy' ? '😌 سهل' : '🔥 صعب'}</div></div>`;
+    <div class="count" id="cc">3</div><div class="sub">${act ? 'ركّزوا!' : 'هالمرة بتتفرّج — من الجاية بتلعب 👀'} · ${LVN[r.cur.diff]}</div></div>`;
   let last = -1;
   const loop = () => { const el = $('#cc'); if (!el) return; const n = Math.ceil((r.cur.startAt - sNow()) / 1000); const v = Math.max(1, n); if (v !== last) { last = v; el.textContent = v; FZ.sfx.tick(); el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; } if (n > 0) requestAnimationFrame(loop); };
   loop();
@@ -355,16 +359,16 @@ function scPlay() {
   const r = S.room, key = r.cur.key, gm = FZ.GM[key];
   setTick(`🚨 ${r.names[key]} · ${gm.short} · 🚨`);
   app.innerHTML = `<div class="screen">
-    <div class="console"><div class="ci">${gm.icon}</div><div class="cn"><b>${r.names[key]}</b><small>${r.cur.diff === 'easy' ? '😌 سهل' : '🔥 صعب'} · ${gm.short}</small></div><div class="timer${r.cur.noTimer ? ' hidden' : ''}" id="pt">--</div></div>
+    <div class="console"><div class="ci">${gm.icon}</div><div class="cn"><b>${r.names[key]}</b><small>${LVN[r.cur.diff]} · ${gm.short}</small></div><div class="timer${r.cur.noTimer ? ' hidden' : ''}" id="pt">--</div></div>
     <div class="taunt" id="ptn">${TAUNTS[0]}</div>
     <div class="stage" id="stage"></div>
-    ${isHost() ? '<div class="hostbar"><span class="lbl">الريس</span><button class="btn xs" id="hre">🔁 عيد المهمة</button><button class="btn xs" id="hsk">⏭ مرّر</button></div>' : ''}</div>`;
+    ${isHost() ? '<div class="hostbar"><span class="lbl">الريس</span><button class="btn xs" id="hre">🔁 عيد المهمة</button><button class="btn xs" id="hsk">↷ مرّر</button></div>' : ''}</div>`;
   S.mounted = null; S.gkey = null;
   if (S.g && S.gkey0 === key) mountGame();
   if ($('#hre')) $('#hre').onclick = () => confirmBox('نعيد المهمة من الأول؟', '🔁 عيد', () => FZ.send({ t: 'retry' }));
-  if ($('#hsk')) $('#hsk').onclick = () => confirmBox('نمرّر هالمهمة؟<div class="sub" style="margin-top:6px">ما بتاخد قلب</div>', '⏭ مرّر', () => FZ.send({ t: 'skip' }));
+  if ($('#hsk')) $('#hsk').onclick = () => confirmBox('نمرّر هالمهمة؟<div class="sub" style="margin-top:6px">ما بتاخد قلب</div>', '↷ مرّر', () => FZ.send({ t: 'skip' }));
   clearInterval(S.timerIv); clearInterval(S.tauntIv);
-  S.timerIv = setInterval(() => { const t = $('#pt'); if (!t || !S.room || !S.room.cur) return clearInterval(S.timerIv); const left = (S.endsAt || S.room.cur.endsAt) - sNow(); t.textContent = fmt(left); t.classList.toggle('hot', left < 10500); }, 200);
+  S.timerIv = setInterval(() => { const t = $('#pt'); if (!t || !S.room || !S.room.cur) return clearInterval(S.timerIv); const left = (S.endsAt || S.room.cur.endsAt) - sNow(); t.textContent = fmt(left); t.classList.toggle('hot', left < 10500); const sec = Math.ceil(left / 1000); if (!S.room.cur.noTimer && sec !== S.lastBeep && sec > 0 && (sec <= 10 || (sec <= 20 && sec % 2 === 0))) { S.lastBeep = sec; FZ.sfx.warn(sec <= 10); } }, 200);
   S.tauntIv = setInterval(() => { const t = $('#ptn'); if (!t) return clearInterval(S.tauntIv); t.textContent = TAUNTS[Math.floor(Math.random() * TAUNTS.length)]; t.style.animation = 'none'; void t.offsetWidth; t.style.animation = ''; }, 7000);
 }
 function refreshPlay() { $('#hearts').innerHTML = heartsHTML(S.room.hearts); }
@@ -533,11 +537,11 @@ function setupInstall() {
 }
 
 // ---------- الأزرار الثابتة ----------
-const NAMES = { count: 'عدّوا سوا', keyboard: 'الكيبورد المقسوم', balance: 'الميزان', tower: 'البرج', glass: 'عبّوا الكاسة', bridge: 'الجسر', bomb: 'فكّ القنبلة', pulse: 'النبض', drum: 'الطبلة', puzzle: 'البازل المقسوم', twister: 'تويستر الأصابع', fire: 'الإطفائية' };
+const NAMES = { count: 'عدّوا سوا', keyboard: 'الكيبورد المقسوم', tower: 'البرج', glass: 'عبّوا الكاسة', bridge: 'الجسر', bomb: 'فكّ القنبلة', pulse: 'النبض', drum: 'الطبلة', puzzle: 'البازل المقسوم', power: 'رجّعوا الكهربا', atc: 'برج المراقبة', fire: 'الإطفائية' };
 $('#bHelp').onclick = () => {
   modal(`<div class="help"><h2 class="t" style="margin:6px 0">كيف منلعب؟ 🚨</h2>
     <p>قعدة فزعة لعبة جماعية: ما في حدا بيربح لحالو — <b>يا منطلع سوا، يا منوقع سوا</b>.</p>
-    <p>▸ الريس بيفتح القعدة والباقي بيفوتوا بالكود أو الـQR، من 2 لـ12 لاعب.<br>▸ الدولاب بيختار المهمة، والكل بيلعبها سوا كل واحد من موبايله.<br>▸ 3 قلوب للقعدة كلها: كل مهمة بتفشل بتاخد قلب، وإذا خلصوا خلصت القعدة.<br>▸ السهل والصعب نفس المهمة — الفرق بالوقت بس.<br>▸ <b>⏭ مرّر</b>: الريس بيطلّع المهمة من الدولاب بلا ما تاخد قلب.<br>▸ <b>🔁 عيد</b>: الريس بيعيد المهمة بأي لحظة، والنتيجة القديمة بتنلغى — وإذا كانت فشل القلب بيرجع.<br>▸ بالمهمات الصعبة الريس بيقدر يخلّي كم حدا يتفرّجوا 👀.<br>▸ من زر 👥 الريس بيطلّع أو بيعدّل أي حدا بأي وقت، أو بيسلّم الريس لغيره. وإذا غاب الريس حدا تاني بيستلم.<br>▸ زر 🏠 فوق: خلّصنا وشوفوا النتيجة، أو قعدة جديدة.</p>
+    <p>▸ الريس بيفتح القعدة والباقي بيفوتوا بالكود أو الـQR، من 2 لـ12 لاعب.<br>▸ الدولاب بيختار المهمة، والكل بيلعبها سوا كل واحد من موبايله.<br>▸ 3 قلوب للقعدة كلها: كل مهمة بتفشل بتاخد قلب، وإذا خلصوا خلصت القعدة.<br>▸ 3 مستويات: <b>السهل</b> وقت مريح، <b>المتوسط</b> نفس المهمة بوقت أقصر، و<b>الصعب</b> نفس وقت المتوسط بس المهمة نفسها أصعب.<br>▸ <b>↷ مرّر</b>: الريس بيطلّع المهمة من الدولاب بلا ما تاخد قلب.<br>▸ <b>🔁 عيد</b>: الريس بيعيد المهمة بأي لحظة، والنتيجة القديمة بتنلغى — وإذا كانت فشل القلب بيرجع.<br>▸ الكل بيلعب بكل المهمات — ما في مراقبين.<br>▸ إذا حدا فصل نص المهمة، بعد 15 ثانية حصته بتتوزّع عالباقيين، أو الريس بيطلّعه من 👥.<br>▸ من زر 👥 الريس بيطلّع أو بيعدّل أي حدا بأي وقت، أو بيسلّم الريس لغيره. وإذا غاب الريس حدا تاني بيستلم.<br>▸ زر 🏠 فوق: خلّصنا وشوفوا النتيجة، أو قعدة جديدة.</p>
     ${Object.keys(FZ.GM).map(k => `<h3>${FZ.GM[k].icon} ${NAMES[k]}</h3><p>${FZ.GM[k].rules.join(' ')}</p>`).join('')}
     <h3>📚 المرجع</h3><p>مبنية على فكرة الألعاب التعاونية الجماعية (Cooperative Party Games): الفريق كله ضد اللعبة، والنجاح بالتنسيق والتواصل مو بالمنافسة.</p>
     <p style="margin-top:10px"><b>إعداد م. إياد حلوبي</b></p></div>`);
